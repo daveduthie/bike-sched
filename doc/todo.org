@@ -1,0 +1,7 @@
+* consistency
+** DONE remove empty resource reqs
+   - State "DONE"       from              [2018-11-25 Sun 18:04]
+** DONE remove modes with empty resource lists
+   - State "DONE"       from              [2018-11-25 Sun 18:04]
+** TODO remove tasks with empty deps
+   - State "TODO"       from              [2018-11-25 Sun 18:05]
