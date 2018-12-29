@@ -3,5 +3,16 @@
    - State "DONE"       from              [2018-11-25 Sun 18:04]
 ** DONE remove modes with empty resource lists
    - State "DONE"       from              [2018-11-25 Sun 18:04]
-** TODO remove tasks with empty deps
+** CANCELLED remove tasks with empty deps
+   - State "CANCELLED"  from "TODO"       [2018-12-08 Sat 09:34] \\
+     Actually, we need set of tasks which have no deps.
+     
+     Shelving for now.
    - State "TODO"       from              [2018-11-25 Sun 18:05]
+
+     
+** tuning for plausibility
+
+- too many empty deps
+- too many resouurces in a mode
+- ...

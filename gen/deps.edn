@@ -1,0 +1,22 @@
+{:paths    ["resources" "src"]
+ :deps     {
+            metosin/jsonista       {:mvn/version "0.2.2"}
+            org.clojure/clojure    {:mvn/version "1.9.0"}
+            org.clojure/test.check {:mvn/version "0.10.0-alpha3"}
+            }
+ :jvm-opts ["-Dclojure.compiler.direct-linking=true"]
+ :aliases
+ {:test         {:extra-paths ["test" "dev"]
+                 :extra-deps  {}}
+  :runner       {:extra-deps {com.cognitect/test-runner
+                              {:git/url "https://github.com/cognitect-labs/test-runner"
+                               :sha     "76568540e7f40268ad2b646110f237a60295fa3c"}}
+                 :main-opts  ["-m" "cognitect.test-runner"
+                              "-d" "test"]}
+  :nim {:main-opts ["-m clj.native-image daveduthie.bike-sched"
+                    "-H:Name=sched"]
+        :extra-deps
+        {clj.native-image
+         {:git/url "https://github.com/taylorwood/clj.native-image.git"
+          :sha     "d97f25aa153e0f94139f5d03e60a345151815d4d"}}}
+  :socket       {:jvm-opts ["-Dclojure.server.repl={:port,5555,:accept,clojure.core.server/repl}"]}}}

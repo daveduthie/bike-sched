@@ -1,0 +1,13 @@
+[package]
+name = "project"
+version = "0.1.0"
+authors = ["David Duthie <dave.a.duthie@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+rand = "*"
+serde = "*"
+serde_derive = "*"
+serde_json = "*"
+itertools = "*"
+uuid = {version = "*", features = ["serde", "v4"]}
