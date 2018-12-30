@@ -4,7 +4,7 @@ extern crate project;
 extern crate serde_json;
 extern crate uuid;
 
-use uuid::Uuid;
+// use uuid::Uuid;
 
 /// Read a project in from a magic path, add a new resource, and print it as
 /// JSON. Functionality will be moved to an init module which will implement

@@ -15,14 +15,16 @@
 //! what algorithm leads to this (valid) sort order?:  
 //! - `abcd`
 
+#![feature(test)]
+#[macro_use]
+extern crate itertools;
 extern crate rand;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+extern crate test;
 extern crate uuid;
-#[macro_use]
-extern crate itertools;
 
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -34,13 +36,13 @@ use rand::prelude::*;
 use rand::seq::IteratorRandom;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Resource {
     pub cost: i32,
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Mode {
     #[serde(rename = "mode/duration")]
     pub duration: i32,
@@ -48,7 +50,7 @@ pub struct Mode {
     pub req: HashSet<(i32, Uuid)>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Task {
     #[serde(rename = "deps/ids")]
     pub deps: HashSet<Uuid>,
@@ -58,7 +60,7 @@ pub struct Task {
 
 /// The bare minumum of information we need to operate on a project.
 /// Enriched with extra stuffs later.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Project {
     #[serde(rename = "r/modes")]
     pub modes: HashMap<Uuid, Mode>,
@@ -71,7 +73,7 @@ pub struct Project {
 }
 
 /// A Nucleotide associates a task with a specific execution mode and release time.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Nucleotide {
     pub task: Uuid,
     pub mode: Uuid,
@@ -83,7 +85,7 @@ pub struct Nucleotide {
 ///
 /// [nucleotide]: struct.Nucleotide.html
 /// [project]: struct.Project.html
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Genotype(Vec<Nucleotide>);
 
 impl Genotype {
@@ -95,7 +97,7 @@ impl Genotype {
 /// The main artifact.
 /// Contains a project with essential info about tasks, execution modes, and resources,
 /// as well as a genotype which represents an assignment of tasks to modes and release times.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Schedule {
     pub project: Project,
     pub genotype: Genotype,
@@ -207,9 +209,13 @@ impl Schedule {
     }
 }
 
-#[test]
-fn can_call_greedy_project() {
-    let s = r#"
+#[cfg(test)]
+mod tests {
+    use test::Bencher;
+
+    use super::*;
+
+    static PRJ: &str = r#"
 {
     "r/modes": {
         "26b6b7b7-ba1a-4424-bef9-9daf5753c1ef": {
@@ -262,18 +268,29 @@ fn can_call_greedy_project() {
 }
     "#;
 
-    let project = serde_json::from_str(s).unwrap();
-    let schedule = Schedule::new_greedy(project);
-    println!(
-        "Schedule: {}",
-        serde_json::to_string_pretty(&schedule).unwrap()
-    );
-    assert_eq!(1, 1);
-    let actual: Vec<_> = schedule
-        .genotype
-        .0
-        .iter()
-        .map(|nucleotide| nucleotide.release_time)
-        .collect();
-    assert_eq!(vec![0, 120, 240, 360], actual)
+    #[test]
+    fn can_call_greedy_project() {
+        let project = serde_json::from_str(PRJ).unwrap();
+        let schedule = Schedule::new_greedy(project);
+        println!(
+            "Schedule: {}",
+            serde_json::to_string_pretty(&schedule).unwrap()
+        );
+        assert_eq!(1, 1);
+        let actual: Vec<_> = schedule
+            .genotype
+            .0
+            .iter()
+            .map(|nucleotide| nucleotide.release_time)
+            .collect();
+        assert_eq!(vec![0, 120, 240, 360], actual)
+    }
+
+    #[bench]
+    fn bench_new_greedy_schedule(b: &mut Bencher) {
+        let project: Project = serde_json::from_str(PRJ).unwrap();
+        b.iter(|| {
+            Schedule::new_greedy(project.clone())
+        })
+    }
 }
