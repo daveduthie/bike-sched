@@ -1,22 +1,22 @@
 {:paths    ["resources" "src"]
  :deps     {
-            metosin/jsonista       {:mvn/version "0.2.2"}
-            org.clojure/clojure    {:mvn/version "1.9.0"}
-            org.clojure/test.check {:mvn/version "0.10.0-alpha3"}
+            org.clojure/clojure    {:mvn/version "1.10.1"}
+            org.clojure/test.check {:mvn/version "0.10.0"}
+            expound                {:mvn/version "0.7.2"}
+            clj-http               {:mvn/version "3.10.0"}
+            cheshire               {:mvn/version "RELEASE"}
             }
  :jvm-opts ["-Dclojure.compiler.direct-linking=true"]
  :aliases
- {:test         {:extra-paths ["test" "dev"]
-                 :extra-deps  {}}
-  :runner       {:extra-deps {com.cognitect/test-runner
-                              {:git/url "https://github.com/cognitect-labs/test-runner"
-                               :sha     "76568540e7f40268ad2b646110f237a60295fa3c"}}
-                 :main-opts  ["-m" "cognitect.test-runner"
-                              "-d" "test"]}
-  :nim {:main-opts ["-m clj.native-image daveduthie.bike-sched"
-                    "-H:Name=sched"]
-        :extra-deps
-        {clj.native-image
-         {:git/url "https://github.com/taylorwood/clj.native-image.git"
-          :sha     "d97f25aa153e0f94139f5d03e60a345151815d4d"}}}
-  :socket       {:jvm-opts ["-Dclojure.server.repl={:port,5555,:accept,clojure.core.server/repl}"]}}}
+ {:test   {:extra-paths ["test" "dev"]
+           :extra-deps  {}}
+  :runner {:extra-deps {com.cognitect/test-runner
+                        {:git/url "https://github.com/cognitect-labs/test-runner"
+                         :sha     "cb96e80f6f3d3b307c59cbeb49bb0dcb3a2a780b"}}
+           :main-opts  ["-m" "cognitect.test-runner"
+                        "-d" "test"]}
+  :socket {:jvm-opts ["-Dclojure.server.repl={:port,5555,:accept,clojure.core.server/repl}"]}
+  :pack   {:extra-deps {pack/pack.alpha {:git/url "https://github.com/juxt/pack.alpha.git"
+                                         :sha     "110ca11f853fa9dbb3f8eadba3c4176311bae4ac"}}
+           :main-opts  ["-m" "mach.pack.alpha.one-jar"
+                        "target/sched.jar"]}}}

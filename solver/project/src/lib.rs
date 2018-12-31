@@ -37,17 +37,23 @@ use rand::seq::IteratorRandom;
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Example {
+    pub a: u32,
+    pub b: bool
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Resource {
-    pub cost: i32,
+    pub cost: i64,
     pub name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Mode {
     #[serde(rename = "mode/duration")]
-    pub duration: i32,
+    pub duration: i64,
     #[serde(rename = "mode/req")]
-    pub req: HashSet<(i32, Uuid)>,
+    pub req: HashSet<(i64, Uuid)>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -72,12 +78,18 @@ pub struct Project {
     pub tasks: HashMap<Uuid, Task>,
 }
 
+impl Project {
+    pub fn from_str(s: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(s)
+    }
+}
+
 /// A Nucleotide associates a task with a specific execution mode and release time.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Nucleotide {
     pub task: Uuid,
     pub mode: Uuid,
-    pub release_time: i32,
+    pub release_time: i64,
 }
 
 /// A Genotype is a collection of [`Nucleotide`][nucleotide]s which fully describes
@@ -161,7 +173,7 @@ fn select_random_modes(project: &Project, order: &[Uuid], rng: &mut ThreadRng) -
         .collect()
 }
 
-fn select_greedy_release_times(project: &Project, modes: &[Uuid]) -> Vec<i32> {
+fn select_greedy_release_times(project: &Project, modes: &[Uuid]) -> Vec<i64> {
     let mut resource_free_times = HashMap::new();
     let mut release_times = Vec::with_capacity(modes.len());
     for mode_id in modes {
@@ -169,7 +181,7 @@ fn select_greedy_release_times(project: &Project, modes: &[Uuid]) -> Vec<i32> {
         let mut max = 0;
         for (_, resource_id) in &mode.req {
             let f = resource_free_times.entry(resource_id).or_insert(0);
-            max = i32::max(max, *f);
+            max = i64::max(max, *f);
             *f += mode.duration;
         }
         release_times.push(max);
@@ -289,8 +301,6 @@ mod tests {
     #[bench]
     fn bench_new_greedy_schedule(b: &mut Bencher) {
         let project: Project = serde_json::from_str(PRJ).unwrap();
-        b.iter(|| {
-            Schedule::new_greedy(project.clone())
-        })
+        b.iter(|| Schedule::new_greedy(project.clone()))
     }
 }

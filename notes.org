@@ -1,0 +1,40 @@
+* Circular dependencies
+
+The current generator frequently creates circular dependencies between tasks. A
+naive approach might be to reduce over tasks, keeping track of which tasks we've
+seen and removing deps we haven't seen yet.
+
+I'm wondering if a more elegant approach might not be to build up a consistent
+project by iteratively ~gen/fmap~-ing or ~gen/bind~-ing over a seed.
+
+#+BEGIN_SRC clojure
+(defn add-task [project source-of-randomness]
+  (-> project
+      (maybe-add-resources source-of-randomness)
+      (add-stuff source-of-randomness)))
+#+END_SRC
+* consistency
+** DONE remove empty resource reqs
+   - State "DONE"       from              [2018-11-25 Sun 18:04]
+** DONE remove modes with empty resource lists
+   - State "DONE"       from              [2018-11-25 Sun 18:04]
+** CANCELLED remove tasks with empty deps
+   - State "CANCELLED"  from "TODO"       [2018-12-08 Sat 09:34] \\
+     Actually, we need set of tasks which have no deps.
+     
+     Shelving for now.
+   - State "TODO"       from              [2018-11-25 Sun 18:05]
+
+** TODO Break cycles in task dependencies
+* tuning for plausibility
+
+- too many empty deps
+- too many resources in a mode
+- ...
+
+* make an uberjar
+Just makes it a bit easier to pipe output into solver
+
+* HTTP for IPC
+
+- Easier than JNI...

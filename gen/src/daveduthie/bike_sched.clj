@@ -1,127 +1,110 @@
 (ns daveduthie.bike-sched
-  (:require
-   [clojure.edn :as edn]
-   [clojure.set :as set]
-   [clojure.spec.alpha :as s]
-   [clojure.string :as str]
-   [clojure.test.check :as check]
-   [clojure.test.check.generators :as gen]
-   [jsonista.core :as json])
-  (:gen-class))
+  (:require [clojure.pprint :refer [pprint]]
+            [clojure.set :as set]
+            [clojure.spec.alpha :as s]
+            [clojure.test.check.generators :as gen]
+            [expound.alpha :as expound]
+            [clj-http.client :as clj-http]))
+
+(set! s/*explain-out* expound/printer)
 
 (s/def :mode/duration pos-int?)
-(s/def :r/quantity pos-int?)
-(s/def :r/cost pos-int?)
-(s/def :r/name #{"labourer" "analyst" "philospher"})
-(s/def ::resource (s/tuple :r/cost :r/name))
-(s/def :mode/req
-  (s/coll-of (s/tuple :r/quantity uuid?) :distinct true :gen-max 4))
-(s/def ::mode (s/keys :req [:mode/duration :mode/req]))
-(s/def :deps/ids (s/coll-of uuid? :gen-max 4))
-(s/def :modes/ids (s/coll-of uuid? :gen-max 4))
-(s/def ::task (s/keys :req [:deps/ids :modes/ids]))
-(s/def :r/tasks (s/map-of uuid? ::task))
-(s/def :r/resources (s/map-of uuid? ::resource))
-(s/def :r/modes (s/map-of uuid? ::mode))
-(s/def ::schedule (s/keys :req [:r/tasks :r/resources :r/modes]))
 
-(defn make-task-refs-consistent-impl
-  [tasks dep-ref-replacements mode-ref-replacements]
-  (into {}
-        (map (fn [[task-id task-val]]
-               [task-id
-                (-> task-val
-                    (update :deps/ids #(->> %
-                                            (keep dep-ref-replacements)
-                                            (remove (partial = task-id))
-                                            set))
-                    (update :modes/ids #(->> %
-                                             (keep mode-ref-replacements)
-                                             set)))]))
-        tasks))
+(s/def :resource/quantity pos-int?)
 
-(defn make-task-refs-consistent
-  [{:as schedule, :r/keys [tasks modes]}]
-  (let [dep-ref-replacements (zipmap (sort (mapcat :deps/ids (vals tasks)))
-                                     (sort (keys tasks)))
-        mode-ref-replacements (zipmap (sort (mapcat :modes/ids (vals tasks)))
-                                      (sort (keys modes)))]
-    (update schedule
-            :r/tasks
-            make-task-refs-consistent-impl
-            dep-ref-replacements
-            mode-ref-replacements)))
+(s/def :resource/cost nat-int?)
 
-(defn make-mode-refs-consistent-impl
-  [modes resource-ref-replacements]
-  (into {}
-        (map (fn [[mode-id mode-val]]
-               [mode-id
-                (update
-                 mode-val
-                 :mode/req
-                 (fn [resource-req-list]
-                   (into []
-                         (keep (fn [[q rid]]
-                                 (if-let [rid' (resource-ref-replacements rid)]
-                                   [q rid'])))
-                         resource-req-list)))]))
-        modes))
+(s/def :resource/name (s/and string? not-empty))
 
-(defn make-mode-refs-consistent
-  [{:as schedule, :r/keys [modes resources]}]
-  (let [available-resource-refs (sort (keys resources))
-        current-resource-refs (sort (mapcat #(->> %
-                                                  val
-                                                  :mode/req (map second))
-                                            modes))
-        resource-ref-replacements (zipmap current-resource-refs
-                                          available-resource-refs)]
-    (update schedule
-            :r/modes
-            make-mode-refs-consistent-impl
-            resource-ref-replacements)))
+(s/def :project/resource (s/tuple :resource/name :resource/cost))
 
-(defn prune-mode-refs
-  [{:as schedule, :r/keys [modes]}]
-  (update schedule
-          :r/modes (partial into {} (filter (comp not-empty :mode/req val)))))
+(s/def :mode/resources
+  (s/coll-of (s/tuple :resource/quantity uuid?)
+             :distinct  true
+             :min-count 1
+             :gen-max   3))
 
-(defn consistent-schedule
-  [{:as schedule, :r/keys [tasks modes]}]
-  (-> schedule
-      make-mode-refs-consistent
-      prune-mode-refs
-      make-task-refs-consistent))
+(s/def :task/modes
+  (s/coll-of (s/keys :req [:mode/duration :mode/resources])
+             :distinct true
+             :min-count 1
+             :gen-max  3))
 
-(defn summarise
-  [{:as schedule, :r/keys [tasks modes]}]
-  (let [task-ids (set (keys tasks))
-        task-deps (into #{} (mapcat :deps/ids (vals tasks)))
-        modes-ids (set (keys modes))
-        task-modes (into #{} (mapcat :modes/ids (vals tasks)))]
-    {:consistent? (and (set/superset? task-ids task-deps)
-                       (set/superset? modes-ids task-modes)),
-     :schedule schedule}))
+(s/def :task/deps (s/coll-of uuid? :gen-max 3))
 
-(defn sched
+(s/def :project/task (s/keys :req [:task/deps :task/modes]))
+
+(s/def :project/tasks (s/map-of uuid? :project/task))
+
+(s/def :project/resources (s/map-of uuid? :project/resource))
+
+(s/def :project/schedule (s/keys :req [:project/tasks :project/resources]))
+
+;;; Having another go at this. Binding the way to victory...
+
+(defn- deps*
+  [possible-deps]
+  (if (not-empty possible-deps)
+    (gen/vector (gen/elements possible-deps) 0 3)
+    (gen/return [])))
+
+#_(defn- all-distinct [xs]
+    (not-any? #(> % 1) (vals (frequencies xs))))
+
+(defn- resources*
+  [resources]
+  (->> (gen/map gen/uuid (s/gen :project/resource)
+                {:min-elements (max 0 (- 4 (count resources)))})
+       #_(gen/such-that #(all-distinct (vals %)))
+       (gen/fmap (partial merge resources))))
+
+(defn- modes*
+  [possible-resources]
+  (gen/vector (gen/elements (keys possible-resources)) 1 3))
+
+(defn add-task*
+  [project*]
+  (gen/bind
+   project*
+   (fn [project]
+     (gen/bind
+      (gen/tuple (deps* (keys (:project/tasks project)))
+                 (resources* (:project/resources project))
+                 gen/uuid)
+      (fn [[deps resources tid]]
+        (gen/fmap (fn [modes]
+                    (assoc-in project
+                              [:project/tasks tid]
+                              {:task/deps deps, :task/modes modes}))
+                  (modes* resources)))))))
+
+(defn project*
+  []
+  (gen/return {:project/resources {}, :project/tasks {}}))
+
+(def project-gen (iterate add-task* (project*)))
+
+#_(nth
+   (gen/sample-seq (nth project-gen 10))
+   10)
+
+;; (add-task* (project*))
+
+(defn sample-project
   [size seed]
-  (gen/generate (gen/fmap consistent-schedule
-                          (->> (s/gen ::schedule)
-                               (gen/such-that (comp not-empty :r/tasks))
-                               (gen/such-that (comp not-empty :r/resources))
-                               (gen/such-that (comp not-empty :r/modes))))
-                size
-                seed))
+  (gen/generate (add-task* (project*)) size seed))
 
-(defn -main
-  [& args]
-  (let [parsed (map #(Integer/parseInt %) args)]
-    (println (json/write-value-as-string (summarise (apply sched parsed))))))
+#_(sample-project 10 10)
 
-(comment
-  (defn tty-tap [x] (clojure.pprint/pprint x) (println :=====================))
-  (add-tap tty-tap)
-  (clojure.pprint/pprint (summarise (sched 0 0)))
-  (tap> (summarise (sched 0 0)))
-  :.)
+#_(s/explain :project/schedule (sample-project 0 0))
+
+
+(comment (-> (clj-http/get "http://localhost:8000")
+             :body)
+         (-> (clj-http/post "http://localhost:8000/schedule"
+                            {:as                :json,
+                             :content-type      :json,
+                             :form-params       (sample-project 10 10),
+                             :throw-exceptions? false})
+             :body)
+         :.)

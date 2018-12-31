@@ -1,0 +1,10 @@
+[package]
+name = "server"
+version = "0.1.0"
+authors = ["David Duthie <dave.a.duthie@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+project = { path = "../project" }
+rocket = "*"
+rocket_contrib = "*"
