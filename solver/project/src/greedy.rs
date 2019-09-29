@@ -3,13 +3,7 @@ use std::collections::HashMap;
 use rand::seq::IteratorRandom;
 use uuid::Uuid;
 
-use crate::{
-    Genotype,
-    Mode,
-    Nucleotide,
-    Project,
-    Schedule,
-};
+use crate::{Genotype, Mode, Nucleotide, Project, Schedule};
 
 pub fn dep_order<R: rand::Rng>(project: &Project, rng: &mut R) -> Vec<Uuid> {
     let mut no_deps: Vec<Uuid> = Vec::new();
@@ -106,8 +100,13 @@ impl Genotype {
 }
 
 impl Schedule {
-    pub fn new_greedy<R: rand::Rng>(project: Project, rng: &mut R) -> Self {
+    pub fn new_greedy_seeded<R: rand::Rng>(project: Project, rng: &mut R) -> Self {
         let genotype = Genotype::new_greedy(&project, rng);
         Schedule { genotype, project }
+    }
+
+    pub fn new_greedy(project: Project) -> Self {
+        let mut rng = rand::thread_rng();
+        Schedule::new_greedy_seeded(project, &mut rng)
     }
 }

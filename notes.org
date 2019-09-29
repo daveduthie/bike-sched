@@ -1,10 +1,41 @@
-* build up project generator iteratively
+* DONE Build up project generator iteratively
 
+- State "DONE"       from              [2019-09-23 Mon 22:34]
 - layer a generator for a task over an existing generator for a project
 - onion-like: ensures task deps flow one way
 
-* tuning for plausibility
+* Tuning for plausibility
 
 - too many empty deps
 - too many resources in a mode
 - not enough resource contention between tasks
+* Fitness function
+** DONE Minimum makespan
+- State "DONE"       from              [2019-09-29 Sun 18:35]
+- Easy to calculate
+- Last release time + mode.duration
+** Average tardiness
+- Have to group tasks into jobs
+- Project needs a ~due-time~?
+
+Would be nice to explore this but this feels like it could become a long side quest.
+Also need to refine my terminology a bit first.
+* Crossover operator
+It's easy to combine the mode portion: pick left.mode or
+right.mode. Selecting a release time might be tricky. What about
+jitter? Mutating to modes which neither parent possesses?
+
+** Select left.release-time or right.release-time
+
+Likely to lead to many infeasible solutions
+
+** Select greedily?
+
+Prejudiced in favour of nucleotides which get evaluated earlier.
+
+** Select from parent, then adjust for consistency and greedify later
+
+Could do a post-mutation step to adjust release times. Random order to
+avoid favouring earlier nucleotides?
+
+* Breeding + survival operators

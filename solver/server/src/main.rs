@@ -4,7 +4,7 @@
 extern crate rocket;
 extern crate project;
 
-use project::Project;
+use project::{Project, Schedule};
 use rocket_contrib::json::Json;
 
 #[get("/")]
@@ -13,12 +13,10 @@ fn index() -> &'static str {
 }
 
 #[post("/schedule", format = "application/json", data = "<project>")]
-fn create_schedule(project: Json<Project>) -> Json<Project> {
-    project
-    // let Json(p) = project;
-    // format!("The data: {:?}", p)
+fn create_schedule(project: Json<Project>) -> Json<Schedule> {
+    let s = Schedule::new_greedy(project.into_inner());
+    Json(s)
 }
-
 
 fn main() {
     rocket::ignite()

@@ -1,19 +1,4 @@
 //! # Facilities for reading, writing, and manipulating projects
-//!
-//! Current problem: topological sort of project tasks
-//!
-//! ```diagram
-//! a -> b -.
-//!         |
-//! c ------+-> d
-//! ```
-//!
-//! partition-based topological sorts:  
-//! -  `acbd`
-//! - `cabd`
-//!
-//! what algorithm leads to this (valid) sort order?:  
-//! - `abcd`
 
 #![feature(test)]
 #[macro_use]
@@ -33,11 +18,17 @@ use std::path;
 
 use uuid::Uuid;
 
+pub mod crossover;
+pub mod fitness;
 pub mod greedy;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Resource(String, u64);
 
+/// A Mode represents a manner in which a task can be executed. It
+/// contains resource requirements as a list of `(quantity, id)`
+/// tuples, and a `duration`--how long these resources would be
+/// occupied for.
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Mode {
     #[serde(rename = "mode/duration")]
@@ -72,7 +63,7 @@ impl Project {
 }
 
 /// A Nucleotide associates a task with a specific execution mode and release time.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Nucleotide {
     pub task: Uuid,
     pub mode: Uuid,
@@ -84,7 +75,7 @@ pub struct Nucleotide {
 ///
 /// [nucleotide]: struct.Nucleotide.html
 /// [project]: struct.Project.html
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct Genotype(Vec<Nucleotide>);
 
 impl Genotype {
@@ -111,17 +102,21 @@ pub fn read_project(path: &path::PathBuf) -> io::Result<Project> {
 
 #[cfg(test)]
 mod tests {
+    use rand::rngs;
     use test::Bencher;
 
     use super::*;
 
     static PRJ: &str = include_str!("sample.json");
 
+    fn test_rng() -> rngs::mock::StepRng {
+        rand::rngs::mock::StepRng::new(1, 0)
+    }
+
     #[test]
     fn can_call_greedy_project() {
         let project = serde_json::from_str(PRJ).unwrap();
-        let mut rng = rand::rngs::mock::StepRng::new(1, 0);
-        let schedule = Schedule::new_greedy(project, &mut rng);
+        let schedule = Schedule::new_greedy_seeded(project, &mut test_rng());
 
         println!(
             "Genotype:\n {}",
@@ -134,13 +129,23 @@ mod tests {
             .iter()
             .map(|nucleotide| nucleotide.release_time)
             .collect();
-        assert_eq!(vec![0, 0, 308, 148, 804, 804, 1147, 1363, 1257, 1257], actual)
+        assert_eq!(
+            vec![0, 0, 308, 148, 804, 804, 1147, 1363, 1257, 1257],
+            actual
+        )
+    }
+
+    #[test]
+    fn can_call_fitness() {
+        let project: Project = serde_json::from_str(PRJ).unwrap();
+        let schedule = Schedule::new_greedy(project);
+        let fitness = fitness::fitness(&schedule);
+        assert_eq!(fitness.len(), 1)
     }
 
     #[bench]
     fn bench_new_greedy_schedule(b: &mut Bencher) {
         let project: Project = serde_json::from_str(PRJ).unwrap();
-        let mut rng = rand::rngs::mock::StepRng::new(2, 1);
-        b.iter(|| Schedule::new_greedy(project.clone(), &mut rng))
+        b.iter(|| Schedule::new_greedy(project.clone()))
     }
 }

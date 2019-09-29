@@ -1,9 +1,13 @@
 (ns daveduthie.bike-sched
-  (:require [clojure.spec.alpha :as s]
+  (:require [clj-http.client :as clj-http]
+            [clojure.spec.alpha :as s]
             [clojure.test.check.generators :as gen]
             [expound.alpha :as expound]
-            [clj-http.client :as clj-http]))
+            [loom.graph :as graph]
+            [loom.label]
+            loom.io))
 
+(set! *print-namespace-maps* false)
 (set! s/*explain-out* expound/printer)
 
 (s/def :mode/duration pos-int?)
@@ -179,9 +183,38 @@
   (-> (clj-http/get "http://localhost:8000")
       :body)
   (require '[cheshire.core :as json])
+  (let [data         (sample-project 15 10)
+        roundtripped (-> data
+                         json/encode
+                         (json/decode true))]
+    (-> (post-schedule! data) :genotype))
+  ;; Visualise dependencies between tasks
+  (loom.io/view
+   (reduce-kv
+    (fn [graph task-id {:task/keys [deps]}]
+      (->> deps
+           (map (fn [dep] [dep task-id])) ; dep->task-id
+           (apply graph/add-edges #_loom.label/add-labeled-edges graph)))
+    (graph/digraph)
+    (:project/tasks (sample-project 25 5))))
 
-  (let [data         (sample-project 1 1)
-        roundtripped (-> data json/encode (json/decode true))]
-    (-> (post-schedule! data)))
-  
+
   :.)
+
+(comment
+  ;; Visualise resource contention
+  (let [{:project/keys [tasks]} (sample-project 5 5)]
+    (loom.io/view
+     (reduce-kv
+      (fn [graph task-id {:task/keys [modes]}]
+        (reduce-kv
+         (fn [graph mode-id {:mode/keys [requirements]}]
+           (->> requirements
+                (mapcat (fn [[_ resource-id]]
+                          [[mode-id resource-id] "M -> R"]))
+                (apply loom.label/add-labeled-edges graph)))
+         graph modes))
+      (graph/digraph)
+      tasks)
+     ;; :alg :sfdp
+     :alg :circo)))
