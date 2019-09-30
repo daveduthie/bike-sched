@@ -88,11 +88,11 @@ impl Genotype {
         // Zip them up together into a Genotype
         // Wow! Quite verbose...
         let mut nucs: Vec<Nucleotide> = izip!(&order, &modes, &release_times)
-                .map(|(task, mode, release_time)| Nucleotide {
-                    task: *task,
-                    mode: *mode.0,
-                    release_time: *release_time,
-                })
+            .map(|(task, mode, release_time)| Nucleotide {
+                task: *task,
+                mode: *mode.0,
+                release_time: *release_time,
+            })
             .collect();
         // Want to ensure we sort genotype by task id so we don't have to keep doing it later.
         nucs.sort_by_key(|n| n.task);

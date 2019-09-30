@@ -1,4 +1,4 @@
-use crate::{Schedule};
+use crate::Schedule;
 
 /// Evaluate the fitness of a solution. Right now it just calculates
 /// the makespan but in future, this could be extended penalise
