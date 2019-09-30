@@ -6,6 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="cb0cb553-b760-4b44-8d44-98a83981be3d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/gen/src/daveduthie/bike_sched.clj" beforeDir="false" afterPath="$PROJECT_DIR$/gen/src/daveduthie/bike_sched.clj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/solver/project/src/greedy.rs" beforeDir="false" afterPath="$PROJECT_DIR$/solver/project/src/greedy.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/solver/project/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/solver/project/src/lib.rs" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -22,40 +24,32 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/solver/project/src/fitness.rs">
+        <entry file="file://$PROJECT_DIR$/solver/project/src/greedy.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="45">
-              <caret line="3" column="11" selection-start-line="3" selection-start-column="11" selection-end-line="3" selection-end-column="11" />
+            <state relative-caret-position="466">
+              <caret line="95" column="22" selection-start-line="95" selection-start-column="22" selection-end-line="95" selection-end-column="22" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/solver/project/src/crossover.rs">
+        <entry file="file://$USER_HOME$/.cargo/registry/src/github.com-1ecc6299db9ec823/serde-1.0.101/src/de/mod.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="135">
-              <caret line="9" column="37" selection-start-line="9" selection-start-column="37" selection-end-line="9" selection-end-column="37" />
+            <state relative-caret-position="277">
+              <caret line="537" column="7" selection-start-line="537" selection-start-column="7" selection-end-line="537" selection-end-column="7" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/gen/src/daveduthie/bike_sched.clj">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="706">
-              <caret line="219" column="17" selection-start-line="219" selection-start-column="17" selection-end-line="219" selection-end-column="17" />
-              <folding>
-                <element signature="e#0#281#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/solver/project/src/lib.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="418">
-              <caret line="103" column="10" selection-start-line="103" selection-start-column="10" selection-end-line="103" selection-end-column="10" />
+            <state relative-caret-position="352">
+              <caret line="91" column="22" selection-start-line="91" selection-start-column="22" selection-end-line="91" selection-end-column="22" />
+              <folding>
+                <element signature="e#3058#3059#0" expanded="true" />
+                <element signature="e#3109#3110#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -74,6 +68,8 @@
       <find>R:</find>
       <find>test</find>
       <find>steprng</find>
+      <find>::De</find>
+      <find>sort_by_key</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -85,16 +81,17 @@
         <option value="$PROJECT_DIR$/solver/server/src/main.rs" />
         <option value="$PROJECT_DIR$/solver/server/Cargo.toml" />
         <option value="$PROJECT_DIR$/solver/project/src/fitness.rs" />
-        <option value="$PROJECT_DIR$/solver/project/src/lib.rs" />
         <option value="$PROJECT_DIR$/solver/project/src/crossover.rs" />
         <option value="$PROJECT_DIR$/gen/src/daveduthie/bike_sched.clj" />
+        <option value="$PROJECT_DIR$/solver/project/src/greedy.rs" />
+        <option value="$PROJECT_DIR$/solver/project/src/lib.rs" />
       </list>
     </option>
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="cOZemdEK" />
   </component>
-  <component name="ProjectFrameBounds" fullScreen="true">
+  <component name="ProjectFrameBounds" extendedState="6" fullScreen="true">
     <option name="width" value="1440" />
     <option name="height" value="900" />
   </component>
@@ -178,9 +175,9 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="build" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+    <configuration name="check" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="channel" value="DEFAULT" />
-      <option name="command" value="build --package project --lib" />
+      <option name="command" value="check" />
       <option name="allFeatures" value="false" />
       <option name="nocapture" value="false" />
       <option name="emulateTerminal" value="false" />
@@ -220,10 +217,10 @@
     <recent_temporary>
       <list>
         <item itemvalue="Cargo Command.Test lib" />
+        <item itemvalue="Cargo Command.check" />
         <item itemvalue="Cargo Command.Test crossover::tests::can_crossover" />
         <item itemvalue="Cargo Command.test" />
         <item itemvalue="Cargo Command.run" />
-        <item itemvalue="Cargo Command.build" />
       </list>
     </recent_temporary>
   </component>
@@ -255,7 +252,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="485" y="0" width="955" height="900" extended-state="0" />
+    <frame x="0" y="0" width="1440" height="900" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" sideWeight="0.499385" weight="0.24964234" />
@@ -290,13 +287,6 @@
     <entry file="file://$PROJECT_DIR$/solver/Cargo.toml">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/solver/project/src/greedy.rs">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1620">
-          <caret line="108" column="11" selection-start-line="108" selection-start-column="11" selection-end-line="108" selection-end-column="11" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/solver/server/src/main.rs">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="60">
@@ -328,16 +318,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/solver/.vscode/tasks.json">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/solver/project/src/fitness.rs">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="45">
-          <caret line="3" column="11" selection-start-line="3" selection-start-column="11" selection-end-line="3" selection-end-column="11" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/solver/.vscode/tasks.json" />
     <entry file="file://$PROJECT_DIR$/notes.org">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="525">
@@ -345,10 +326,13 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/solver/project/src/lib.rs">
+    <entry file="file://$PROJECT_DIR$/gen/src/daveduthie/bike_sched.clj">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="418">
-          <caret line="103" column="10" selection-start-line="103" selection-start-column="10" selection-end-line="103" selection-end-column="10" />
+        <state relative-caret-position="706">
+          <caret line="219" column="17" selection-start-line="219" selection-start-column="17" selection-end-line="219" selection-end-column="17" />
+          <folding>
+            <element signature="e#0#281#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -359,12 +343,45 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/gen/src/daveduthie/bike_sched.clj">
+    <entry file="file://$PROJECT_DIR$/solver/project/src/fitness.rs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="706">
-          <caret line="219" column="17" selection-start-line="219" selection-start-column="17" selection-end-line="219" selection-end-column="17" />
+        <state relative-caret-position="45">
+          <caret line="3" column="11" selection-start-line="3" selection-start-column="11" selection-end-line="3" selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.cargo/registry/src/github.com-1ecc6299db9ec823/serde-1.0.101/src/de/mod.rs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="277">
+          <caret line="537" column="7" selection-start-line="537" selection-start-column="7" selection-end-line="537" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/solver/project/src/greedy.rs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="466">
+          <caret line="95" column="22" selection-start-line="95" selection-start-column="22" selection-end-line="95" selection-end-column="22" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/src/libcore/iter/traits/iterator.rs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="293">
+          <caret line="1779" column="7" selection-start-line="1779" selection-start-column="7" selection-end-line="1779" selection-end-column="7" />
           <folding>
-            <element signature="e#0#281#0" expanded="true" />
+            <element signature="e#60#61#0" expanded="true" />
+            <element signature="e#84#85#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/solver/project/src/lib.rs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="352">
+          <caret line="91" column="22" selection-start-line="91" selection-start-column="22" selection-end-line="91" selection-end-column="22" />
+          <folding>
+            <element signature="e#3058#3059#0" expanded="true" />
+            <element signature="e#3109#3110#0" expanded="true" />
           </folding>
         </state>
       </provider>

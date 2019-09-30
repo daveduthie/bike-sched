@@ -75,7 +75,7 @@ pub struct Nucleotide {
 ///
 /// [nucleotide]: struct.Nucleotide.html
 /// [project]: struct.Project.html
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, Eq, PartialEq)]
 pub struct Genotype(Vec<Nucleotide>);
 
 impl Genotype {
@@ -91,6 +91,30 @@ impl Genotype {
 pub struct Schedule {
     pub project: Project,
     pub genotype: Genotype,
+}
+
+impl Schedule {
+    pub fn makespan(&self) -> i64 {
+        let makespan = self
+            .genotype
+            .0
+            .iter()
+            .map(|n| {
+                let duration = self
+                    .project
+                    .tasks
+                    .get(&n.task)
+                    .unwrap()
+                    .modes
+                    .get(&n.mode)
+                    .unwrap()
+                    .duration;
+                n.release_time + duration
+            })
+            .fold(0, |acc, nn| if acc < nn { nn } else { acc });
+
+        makespan
+    }
 }
 
 pub fn read_project(path: &path::PathBuf) -> io::Result<Project> {
@@ -130,7 +154,7 @@ mod tests {
             .map(|nucleotide| nucleotide.release_time)
             .collect();
         assert_eq!(
-            vec![0, 0, 308, 148, 804, 804, 1147, 1363, 1257, 1257],
+            vec![0, 0, 804, 308, 804, 1147, 148, 1257, 1363, 1257],
             actual
         )
     }

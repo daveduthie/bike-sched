@@ -1,12 +1,9 @@
 use crate::Genotype;
 
 pub fn crossover<R: rand::Rng>(rng: &mut R, gen1: &Genotype, gen2: &Genotype) -> Genotype {
-    let mut gen1c = gen1.clone();
-    let mut gen2c = gen2.clone();
-    gen1c.0.sort_by_key(|n| n.task);
-    gen2c.0.sort_by_key(|n| n.task);
     let mut geno3 = Genotype(vec![]);
     for (n1, n2) in gen1.0.iter().zip(gen2.0.iter()) {
+	assert_eq!(n1.task, n2.task); // invariant: genotypes are always sorted by task id
         // Simplest possible crossover: pick left or right.
         if rng.gen_bool(0.5) {
             println!("Taking from left");
