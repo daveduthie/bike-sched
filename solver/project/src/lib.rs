@@ -9,21 +9,42 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate test;
-extern crate uuid;
 
-use std::collections::HashMap;
 use std::fs::File;
 use std::io;
 use std::path;
-
-use uuid::Uuid;
 
 pub mod crossover;
 pub mod fitness;
 pub mod greedy;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Resource(String, u64);
+pub struct Resource {
+    /// Not required. Kill?
+    #[serde(rename = "resource/name")]
+    name: String,
+    /// Cost of using 1 unit of this resource for 1 unit of time
+    #[serde(rename = "resource/cost")]
+    cost: u64,
+    /// How many units of this resource are available per unit of time
+    #[serde(rename = "resource/quantity")]
+    quantity: u64,
+}
+
+/// Ids are indices into arrays, so they're represented as `usize`s.
+pub type ModeId = usize;
+/// Ids are indices into arrays, so they're represented as `usize`s.
+pub type TaskId = usize;
+/// Ids are indices into arrays, so they're represented as `usize`s.
+pub type ResourceId = usize;
+
+#[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
+pub struct ModeRequirement {
+    #[serde(rename = "req/id")]
+    id: ModeId,
+    #[serde(rename = "req/quant")]
+    quantity: u64,
+}
 
 /// A Mode represents a manner in which a task can be executed. It
 /// contains resource requirements as a list of `(quantity, id)`
@@ -32,17 +53,20 @@ pub struct Resource(String, u64);
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Mode {
     #[serde(rename = "mode/duration")]
-    pub duration: i64,
+    pub duration: u64,
     #[serde(rename = "mode/requirements")]
-    pub req: Vec<(i64, Uuid)>,
+    pub req: Vec<ModeRequirement>,
 }
 
+/// A unit of work
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Task {
+    /// Set of tasks which must be completed before this task
     #[serde(rename = "task/deps")]
-    pub deps: Vec<Uuid>,
+    pub deps: Vec<usize>,
+    /// Set of modes in which this task can be completed
     #[serde(rename = "task/modes")]
-    pub modes: HashMap<Uuid, Mode>,
+    pub modes: Vec<Mode>,
 }
 
 /// The bare minumum of information we need to operate on a project.
@@ -50,10 +74,10 @@ pub struct Task {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Project {
     #[serde(rename = "project/resources")]
-    pub resources: HashMap<Uuid, Resource>,
+    pub resources: Vec<Resource>,
 
     #[serde(rename = "project/tasks")]
-    pub tasks: HashMap<Uuid, Task>,
+    pub tasks: Vec<Task>,
 }
 
 impl Project {
@@ -62,12 +86,25 @@ impl Project {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub struct TimeStamp(f64);
+
+type ReleaseTime = f64;
+
+// impl PartialEq for TimeStamp {
+//     fn eq(&self, o: &Self) -> bool {
+//         let t: u64 = unsafe { mem::transmute(self.0) };
+//         let t_o: u64 = unsafe { mem::transmute(o.0) };
+//         t == t_o
+//     }
+// }
+
 /// A Nucleotide associates a task with a specific execution mode and release time.
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Nucleotide {
-    pub task: Uuid,
-    pub mode: Uuid,
-    pub release_time: i64,
+    pub task: usize,
+    pub mode: usize,
+    pub release_time: f64,
 }
 
 /// A Genotype is a collection of [`Nucleotide`][nucleotide]s which fully describes
@@ -75,7 +112,7 @@ pub struct Nucleotide {
 ///
 /// [nucleotide]: struct.Nucleotide.html
 /// [project]: struct.Project.html
-#[derive(Debug, Deserialize, Serialize, Clone, Eq, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Genotype(Vec<Nucleotide>);
 
 impl Genotype {
@@ -94,7 +131,7 @@ pub struct Schedule {
 }
 
 impl Schedule {
-    pub fn makespan(&self) -> i64 {
+    pub fn makespan(&self) -> f64 {
         let makespan = self
             .genotype
             .0
@@ -103,15 +140,15 @@ impl Schedule {
                 let duration = self
                     .project
                     .tasks
-                    .get(&n.task)
+                    .get(n.task)
                     .unwrap()
                     .modes
-                    .get(&n.mode)
+                    .get(n.mode)
                     .unwrap()
                     .duration;
-                n.release_time + duration
+                n.release_time + duration as f64
             })
-            .fold(0, |acc, nn| if acc < nn { nn } else { acc });
+            .fold(0 as f64, |acc, nn| if acc < nn { nn } else { acc });
 
         makespan
     }
@@ -154,7 +191,7 @@ mod tests {
             .map(|nucleotide| nucleotide.release_time)
             .collect();
         assert_eq!(
-            vec![0, 0, 804, 308, 804, 1147, 148, 1257, 1363, 1257],
+            vec![0.0, 0.0, 804.0, 308.0, 804.0, 1147.0, 148.0, 1257.0, 1363.0, 1257.0],
             actual
         )
     }

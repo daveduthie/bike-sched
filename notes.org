@@ -9,6 +9,22 @@
 - too many empty deps
 - too many resources in a mode
 - not enough resource contention between tasks
+
+* Genotype representation
+
+|  t0 |  t1 |  t2 |   t3 |  t4 |
+|-----+-----+-----+------+-----|
+|   0 |   0 |   3 |    2 |   4 |
+| 0.0 | 2.0 | 0.0 | 2.01 | 3.0 |
+
+Similar to Wall, but consider release time to be the time at which task is
+queued for execution. To calculate when task actually gets executed, I'd need to
+maintain a schedule for each resource.
+
+Hmm... Feels a bit weird to treat infeasible solutions as feasible. I guess this
+means there's a huge space of 'benign' mutations which have no effect on the
+plan's phenotype.
+
 * Fitness function
 ** DONE Minimum makespan
 - State "DONE"       from              [2019-09-29 Sun 18:35]

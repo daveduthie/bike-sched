@@ -1,10 +1,10 @@
 {:paths    ["resources" "src"]
  :deps     {aysylu/loom            {:mvn/version "RELEASE"}
-            cheshire               {:mvn/version "RELEASE"}
             clj-http               {:mvn/version "RELEASE"}
             expound                {:mvn/version "RELEASE"}
             org.clojure/clojure    {:mvn/version "RELEASE"}
-            org.clojure/test.check {:mvn/version "RELEASE"}}
+            org.clojure/test.check {:mvn/version "RELEASE"}
+            metosin/jsonista       {:mvn/version "0.2.5"}}
  :jvm-opts ["-Dclojure.compiler.direct-linking=true"]
  :aliases
  {:test   {:extra-paths ["test" "dev"]
