@@ -1,7 +1,7 @@
 use rand::seq::IteratorRandom;
 use rand::Rng;
 
-use crate::{Genotype, ModeId, Nucleotide, Project, ReleaseTime, Schedule, Task, TaskId};
+use crate::{Genotype, ModeId, Nucleotide, Project, Schedule, Task, TaskId, TimeStamp};
 
 pub fn dep_order<R: rand::Rng>(project: &Project, rng: &mut R) -> Vec<TaskId> {
     let mut no_deps: Vec<TaskId> = Vec::new();
@@ -52,7 +52,7 @@ fn select_random_modes<R: Rng>(tasks: &[Task], rng: &mut R) -> Vec<ModeId> {
         .collect()
 }
 
-fn select_greedy_release_times(_project: &Project, _modes: &[ModeId]) -> Vec<ReleaseTime> {
+fn select_greedy_release_times(_project: &Project, _modes: &[ModeId]) -> Vec<TimeStamp> {
     unimplemented!()
 }
 

@@ -10,6 +10,10 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate test;
 
+#[macro_use]
+extern crate log;
+extern crate simple_logger;
+
 use std::fs::File;
 use std::io;
 use std::path;
@@ -17,6 +21,7 @@ use std::path;
 pub mod crossover;
 pub mod fitness;
 pub mod greedy;
+pub mod simulate;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Resource {
@@ -38,6 +43,9 @@ pub type TaskId = usize;
 /// Ids are indices into arrays, so they're represented as `usize`s.
 pub type ResourceId = usize;
 
+/// The number of units of a resource required to perform a (piece of) a task.
+pub type ResourceQuantity = u64;
+
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ModeRequirement {
     #[serde(rename = "req/id")]
@@ -46,6 +54,8 @@ pub struct ModeRequirement {
     quantity: u64,
 }
 
+type Duration = u64;
+
 /// A Mode represents a manner in which a task can be executed. It
 /// contains resource requirements as a list of `(quantity, id)`
 /// tuples, and a `duration`--how long these resources would be
@@ -53,7 +63,7 @@ pub struct ModeRequirement {
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Mode {
     #[serde(rename = "mode/duration")]
-    pub duration: u64,
+    pub duration: Duration,
     #[serde(rename = "mode/requirements")]
     pub req: Vec<ModeRequirement>,
 }
@@ -86,18 +96,7 @@ impl Project {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-pub struct TimeStamp(f64);
-
-type ReleaseTime = f64;
-
-// impl PartialEq for TimeStamp {
-//     fn eq(&self, o: &Self) -> bool {
-//         let t: u64 = unsafe { mem::transmute(self.0) };
-//         let t_o: u64 = unsafe { mem::transmute(o.0) };
-//         t == t_o
-//     }
-// }
+type TimeStamp = f64;
 
 /// A Nucleotide associates a task with a specific execution mode and release time.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

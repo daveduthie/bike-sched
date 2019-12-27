@@ -142,13 +142,12 @@
   (sample-project 10 10))
 
 (defn post-schedule! [schedule]
-  (select-keys
-   (clj-http/post "http://localhost:8000/schedule"
-                  {:as                :json,
-                   :content-type      :json,
-                   :form-params       schedule,
-                   :throw-exceptions? false})
-   [:body :status]))
+  (-> (clj-http/post "http://localhost:8000/schedule"
+                     {:content-type      :json,
+                      :body              (json/write-value-as-bytes schedule),
+                      :throw-exceptions? false})
+      #_(update :body json/read-value)
+      (select-keys [:body :status])))
 
 (comment
   ;; Visualise dependencies between tasks

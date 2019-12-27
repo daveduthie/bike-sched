@@ -1,9 +1,9 @@
 {:paths    ["resources" "src"]
- :deps     {aysylu/loom            {:mvn/version "RELEASE"}
-            clj-http               {:mvn/version "RELEASE"}
-            expound                {:mvn/version "RELEASE"}
-            org.clojure/clojure    {:mvn/version "RELEASE"}
-            org.clojure/test.check {:mvn/version "RELEASE"}
+ :deps     {aysylu/loom            {:mvn/version "1.0.2"}
+            clj-http               {:mvn/version "3.10.0"}
+            expound                {:mvn/version "0.8.2"}
+            org.clojure/clojure    {:mvn/version "1.10.1"}
+            org.clojure/test.check {:mvn/version "0.10.0"}
             metosin/jsonista       {:mvn/version "0.2.5"}}
  :jvm-opts ["-Dclojure.compiler.direct-linking=true"]
  :aliases
@@ -11,11 +11,10 @@
            :extra-deps  {}}
   :runner {:extra-deps {com.cognitect/test-runner
                         {:git/url "https://github.com/cognitect-labs/test-runner"
-                         :sha     "cb96e80f6f3d3b307c59cbeb49bb0dcb3a2a780b"}}
+                         :sha     "f7ef16dc3b8332b0d77bc0274578ad5270fbfedd"}}
            :main-opts  ["-m" "cognitect.test-runner"
                         "-d" "test"]}
-  :socket {:jvm-opts ["-Dclojure.server.repl={:port,5555,:accept,clojure.core.server/repl}"]}
   :pack   {:extra-deps {pack/pack.alpha {:git/url "https://github.com/juxt/pack.alpha.git"
-                                         :sha     "110ca11f853fa9dbb3f8eadba3c4176311bae4ac"}}
+                                         :sha     "60cdf0e75efc988b893eafe726ccdf0d5a5a6067"}}
            :main-opts  ["-m" "mach.pack.alpha.one-jar"
                         "target/sched.jar"]}}}

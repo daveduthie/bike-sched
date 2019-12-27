@@ -5,9 +5,11 @@ authors = ["David Duthie <dave.a.duthie@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+itertools = "*"
+log = "*"
 rand = "*"
 serde = "*"
 serde_derive = "*"
 serde_json = "*"
-itertools = "*"
+simple_logger = "*"
 uuid = {version = "*", features = ["serde", "v4"]}
