@@ -9,8 +9,51 @@
 - too many empty deps
 - too many resources in a mode
 - not enough resource contention between tasks
+* Representation
+** Genotype
+
+#+begin_src clojure
+[{:TaskId 1 :ModeId 2 :Release 0}
+ {:TaskId 0 :ModeId 1 :Release 0}
+ {:TaskId 2 :ModeId 0 :Release 0}]
+
+[{:TaskId 0 :ModeId 1 :Release 0}
+ {:TaskId 2 :ModeId 1 :Release 0}
+ {:TaskId 1 :ModeId 3 :Release 0}]
+#+end_src
+
+- Can represent precedence-infeasible orderings
+- Imply job release order by order within genotype
+- Can use ~Release~ to mean delay from when task dependencies met and
+  resources available that job is started
+- Ensures that any non-negative ~Release~ yields a feasible schedule
+- Crossover by edge recombination
+
+#+begin_src clojure
+;; Task 0                Task 1                  Task 2
+[{:ModeId 1 :Release 0}  {:ModeId 0 :Release 50} {:ModeId 1 :Release 25}]
+[{:ModeId 2 :Release 50} {:ModeId 1 :Release 0}  {:ModeId 1 :Release 25}]
+#+end_src
+
+- Easy to do crossover (tasks lined up)
+- ~Release~ means delay from when task dependencies are met that job is started
+- Unfortunately, can represent resource-infeasible plans
+- if ~Release~ is a real number, collisions are unlikely
+  
+#+begin_src clojure
+[
+ {:ModeId}]
+#+end_src
+  
+** UUID vs vector index
+UUID means no care needs to be taken to avoid colliding IDs. Indexes
+mean more compact representation (for humans) and (speculating) faster
+look ups.
+
+* Greedy schedule
+** Make it respect task precedence
 * Fitness function
-** DONE Minimum makespan
+** DONE Minimum make span
 - State "DONE"       from              [2019-09-29 Sun 18:35]
 - Easy to calculate
 - Last release time + mode.duration
@@ -20,6 +63,8 @@
 
 Would be nice to explore this but this feels like it could become a long side quest.
 Also need to refine my terminology a bit first.
+** Cost
+What does resource cost mean? Cost per minute?
 * Crossover operator
 It's easy to combine the mode portion: pick left.mode or
 right.mode. Selecting a release time might be tricky. What about

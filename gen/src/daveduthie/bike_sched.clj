@@ -13,17 +13,25 @@
 
 (s/def :mode/duration pos-int?)
 
-(s/def :resource/quantity pos-int?)
+(s/def :requirement/quant pos-int?)
 
 (s/def :resource/cost nat-int?)
 
 (s/def :resource/name (s/and string? not-empty))
 
-(s/def :project/resource (s/tuple :resource/name :resource/cost))
+(s/def :project/resource
+  (s/keys :req [:resource/name :resource/cost]))
+
+(s/def :project/resources (s/every :project/resource))
+
+(s/def :requirement/res-id nat-int?)
+
+(s/def :mode/requirement
+  (s/keys :req [:requirement/quant :requirement/res-id]))
 
 (s/def :mode/requirements
-  (s/every (s/tuple :resource/quantity uuid?)
-           :distinct  true
+  (s/every :mode/requirement
+           :distinct  true ; could generate duplicate `:requirement/res-id`s :/
            :min-count 1
            :gen-max   3))
 
@@ -31,15 +39,13 @@
        (s/keys :req [:mode/duration :mode/requirements]))
 
 (s/def :task/modes
-       (s/map-of uuid? :task/mode :distinct true :min-count 1))
+       (s/every :task/mode :distinct true :min-count 1))
 
-(s/def :task/deps (s/coll-of uuid? :gen-max 3))
+(s/def :task/deps (s/coll-of nat-int? :gen-max 3))
 
 (s/def :project/task (s/keys :req [:task/deps :task/modes]))
 
-(s/def :project/tasks (s/map-of uuid? :project/task))
-
-(s/def :project/resources (s/map-of uuid? :project/resource))
+(s/def :project/tasks (s/every :project/task))
 
 (s/def :project/schedule (s/keys :req [:project/tasks :project/resources]))
 
@@ -47,42 +53,41 @@
 
 (defn- deps*
   [possible-deps]
-  (if (not-empty possible-deps)
-    (gen/vector (gen/elements possible-deps) 0 3)
-    (gen/return [])))
+  (let [possible-dep-ids (range (count possible-deps))]
+    (if (not-empty possible-dep-ids)
+      (gen/vector (gen/elements possible-dep-ids) 0 3)
+      (gen/return []))))
 
 (defn- resources*
   [resources]
   (->>
-   (gen/map gen/uuid
-            (s/gen :project/resource)
-            {:min-elements (max 0 (- 4 (count resources)))})
-   (gen/fmap (partial merge resources))))
+   (gen/vector-distinct-by :resource/name
+                           (s/gen :project/resource)
+                           {:min-elements (max 0 (- 4 (count resources)))})
+   (gen/fmap (partial into resources))))
+
+#_(s/explain :project/resources
+             (gen/generate (resources* []) 10 1000))
 
 (defn- modes*
   [possible-resources]
-  (gen/map gen/uuid
-           (gen/fmap
-            (fn [[duration requirements]]
-              {:mode/duration     duration,
-               :mode/requirements requirements})
-            (gen/tuple (gen/choose 1 720)
-                       (gen/vector-distinct-by
-                        second
-                        (gen/tuple (gen/choose 1 10)
-                                   (gen/elements possible-resources))
-                        {:min-elements 1})))
-           {:min-elements 1}))
+  (let [possible-resource-ids (range (count possible-resources))]
+    (gen/vector-distinct-by
+     :mode/requirements
+     (gen/fmap
+      (partial zipmap [:mode/duration :mode/requirements])
+      (gen/tuple
+       (gen/choose 1 720)
+       (gen/vector-distinct-by
+        :requirement/res-id
+        (gen/fmap (partial zipmap [:requirement/quant :requirement/res-id])
+                  (gen/tuple (gen/choose 1 10)
+                             (gen/elements possible-resource-ids)))
+        {:min-elements 1})))
+     {:min-elements 1})))
 
-#_(s/explain
-   :task/modes
-   (first
-    (gen/sample
-     (modes*
-      (keys
-       {#uuid "8ee5ab84-7750-4e3d-974b-d4e755d1a05c" 1,
-        #uuid "e910e18f-780d-4afd-abee-335c5d638cbf" 2})))))
-
+#_(s/explain :task/modes
+             (gen/generate (modes* [:foo :bar]) 2 2))
 
 (defn add-task*
   [project-seed*]
@@ -93,25 +98,23 @@
       (resources* (:project/resources project))
       (fn [resources]
         (gen/fmap
-         (fn [[deps modes tid]]
+         (fn [[deps modes]]
            (when (empty? modes)
              (throw
-               (ex-info "huh?"
-                        {:deps      deps,
-                         :modes     modes,
-                         :resources resources,
-                         :tid       tid})))
+              (ex-info "huh?"
+                       {:deps      deps,
+                        :modes     modes,
+                        :resources resources,})))
            (-> project
                (assoc :project/resources resources)
-               (assoc-in [:project/tasks tid]
-                         {:task/deps deps, :task/modes modes})))
-         (gen/tuple (deps* (keys (:project/tasks project)))
-                    (modes* (keys resources))
-                    gen/uuid)))))))
+               (update :project/tasks conj
+                       {:task/deps deps, :task/modes modes})))
+         (gen/tuple (deps* (:project/tasks project))
+                    (modes* resources))))))))
 
 (def project-seed*
   (gen/return
-   {:project/resources {}, :project/tasks {}}))
+   {:project/resources [], :project/tasks []}))
 
 (def project-gen* (iterate add-task* project-seed*))
 
@@ -119,72 +122,20 @@
   ([size] (gen/generate (nth project-gen* size) size))
   ([size seed] (gen/generate (nth project-gen* size) size seed)))
 
-(comment
-  ;;; Experimenting with ints as ids. Quite like how it makes the
-  ;;; schedule more compact.
-  (let [p      (sample-project 2 2)
-        ctr    (volatile! -1)
-        lookup (volatile! {})
-        ->int  (fn [id]
-                 (if-let [int-id (get @lookup id)]
-                   int-id
-                   (let [int-id (vswap! ctr inc)]
-                     (vswap! lookup assoc id int-id)
-                     int-id)))
-        p'     (-> p
-                   (update
-                    :project/resources
-                    (fn [resources]
-                      (into []
-                            (map val)
-                            (walk/postwalk (fn [x]
-                                             (if (uuid? x) (->int x) x))
-                                           resources))))
-                   (update :project/tasks
-                           (fn [tasks]
-                             (walk/postwalk
-                              (fn [x] (if-let [int-id (@lookup x)]
-                                        int-id x))
-                              tasks))))
-        p''    (-> p'
-                   (update :project/tasks
-                           (fn [tasks]
-                             (into {}
-                                   (map (fn [[task-id task]]
-                                          [task-id
-                                           (update task :task/modes
-                                                   (fn [modes]
-                                                     (into []
-                                                           (vals modes))))]))
-                                   tasks))))
-        _      (vreset! ctr -1)
-        p'''   (update p'' :project/tasks
-                       (fn [tasks]
-                         (into []
-                               (map val)
-                               (walk/postwalk (fn [x]
-                                                (if (uuid? x)
-                                                  (->int x)
-                                                  x))
-                                              tasks))))]
-    p''')
-
-  {:project/resources [["Ni" 1] ["A" 2] ["0" 1] ["yD" 0] ["i" 0] ["2" 1]],
-   :project/tasks
-   [{:task/deps  [],
-     :task/modes [{:mode/duration     17,
-                   :mode/requirements [{:req/id 3, :req/quant 10}]}
-                  {:mode/duration     577,
-                   :mode/requirements [{:req/id 3, :req/quant 5}]}
-                  {:mode/duration     641,
-                   :mode/requirements [{:req/id 1, :req/quant 6}]}]}
-    {:task/deps  [0],
-     :task/modes [{:mode/duration     647,
-                   :mode/requirements [{:req/id 4, :req/quant 6}]}
-                  {:mode/duration     3,
-                   :mode/requirements [{:req/id 2, :req/quant 10}
-                                       {:req/id 0, :req/quant 8}
-                                       {:req/id 5, :req/quant 3}]}]}]})
+(comment (s/explain :project/schedule (sample-project 1 1))
+         (sample-project 1 1)
+         {:project/resources [{:resource/cost 1, :resource/name "M"}
+                              {:resource/cost 1, :resource/name "i"}
+                              {:resource/cost 1, :resource/name "sL"}
+                              {:resource/cost 0, :resource/name "a"}
+                              {:resource/cost 0, :resource/name "b"}],
+          :project/tasks [{:task/deps  [],
+                           :task/modes [{:mode/duration 179,
+                                         :mode/requirements
+                                         [{:requirement/quant  1,
+                                           :requirement/res-id 2}
+                                          {:requirement/quant  9,
+                                           :requirement/res-id 3}]}]}]})
 
 (defn post-schedule! [schedule]
   (:body
@@ -199,11 +150,24 @@
   (-> (clj-http/get "http://localhost:8000")
       :body)
   (require '[cheshire.core :as json])
-  (let [data         (sample-project 15 10)
-        roundtripped (-> data
-                         json/encode
-                         (json/decode true))]
+
+  (let [data (sample-project 15 10)]
     (-> (post-schedule! data) :genotype))
+
+  (json/gener)
+  (sample-project 5 5)
+
+  (defonce keep-going (atom true))
+
+  (reset! keep-going false)
+  
+  (.start (Thread.
+           (fn []
+             (while @keep-going
+               (Thread/sleep 5000)
+               (let [data (sample-project 15 10)]
+                 (-> (post-schedule! data) :genotype))))))
+
   ;; Visualise dependencies between tasks
   (loom.io/view
    (reduce-kv

@@ -1,7 +1,6 @@
 //! # Facilities for reading, writing, and manipulating projects
 
 #![feature(test)]
-#[macro_use]
 extern crate itertools;
 extern crate rand;
 extern crate serde;
@@ -11,38 +10,52 @@ extern crate serde_json;
 extern crate test;
 extern crate uuid;
 
-use std::collections::HashMap;
 use std::fs::File;
 use std::io;
 use std::path;
-
-use uuid::Uuid;
 
 pub mod crossover;
 pub mod fitness;
 pub mod greedy;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Resource(String, u64);
+pub struct Resource {
+    #[serde(rename = "resource/name")]
+    pub name: String,
+    #[serde(rename = "resource/cost")]
+    pub cost: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct ModeRequirement {
+    #[serde(rename = "requirement/quant")]
+    pub quantity: u64,
+    #[serde(rename = "requirement/res-id")]
+    pub resource_id: ResourceId,
+}
 
 /// A Mode represents a manner in which a task can be executed. It
 /// contains resource requirements as a list of `(quantity, id)`
 /// tuples, and a `duration`--how long these resources would be
 /// occupied for.
-#[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd)]
 pub struct Mode {
     #[serde(rename = "mode/duration")]
-    pub duration: i64,
+    pub duration: f64,
     #[serde(rename = "mode/requirements")]
-    pub req: Vec<(i64, Uuid)>,
+    pub req: Vec<ModeRequirement>,
 }
+
+pub type ModeId = usize;
+pub type TaskId = usize;
+pub type ResourceId = usize;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Task {
     #[serde(rename = "task/deps")]
-    pub deps: Vec<Uuid>,
+    pub deps: Vec<TaskId>,
     #[serde(rename = "task/modes")]
-    pub modes: HashMap<Uuid, Mode>,
+    pub modes: Vec<Mode>,
 }
 
 /// The bare minumum of information we need to operate on a project.
@@ -50,10 +63,10 @@ pub struct Task {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Project {
     #[serde(rename = "project/resources")]
-    pub resources: HashMap<Uuid, Resource>,
+    pub resources: Vec<Resource>,
 
     #[serde(rename = "project/tasks")]
-    pub tasks: HashMap<Uuid, Task>,
+    pub tasks: Vec<Task>,
 }
 
 impl Project {
@@ -63,11 +76,11 @@ impl Project {
 }
 
 /// A Nucleotide associates a task with a specific execution mode and release time.
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Nucleotide {
-    pub task: Uuid,
-    pub mode: Uuid,
-    pub release_time: i64,
+    pub task: TaskId,
+    pub mode: ModeId,
+    pub release_time: f64,
 }
 
 /// A Genotype is a collection of [`Nucleotide`][nucleotide]s which fully describes
@@ -75,7 +88,7 @@ pub struct Nucleotide {
 ///
 /// [nucleotide]: struct.Nucleotide.html
 /// [project]: struct.Project.html
-#[derive(Debug, Deserialize, Serialize, Clone, Eq, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Genotype(Vec<Nucleotide>);
 
 impl Genotype {
@@ -94,24 +107,16 @@ pub struct Schedule {
 }
 
 impl Schedule {
-    pub fn makespan(&self) -> i64 {
+    pub fn makespan(&self) -> f64 {
         let makespan = self
             .genotype
             .0
             .iter()
             .map(|n| {
-                let duration = self
-                    .project
-                    .tasks
-                    .get(&n.task)
-                    .unwrap()
-                    .modes
-                    .get(&n.mode)
-                    .unwrap()
-                    .duration;
+                let duration = self.project.tasks[n.task].modes[n.mode].duration;
                 n.release_time + duration
             })
-            .fold(0, |acc, nn| if acc < nn { nn } else { acc });
+            .fold(0.0, |acc, nn| if acc < nn { nn } else { acc });
 
         makespan
     }
@@ -153,10 +158,7 @@ mod tests {
             .iter()
             .map(|nucleotide| nucleotide.release_time)
             .collect();
-        assert_eq!(
-            vec![0, 0, 804, 308, 804, 1147, 148, 1257, 1363, 1257],
-            actual
-        )
+        assert_eq!(vec![0.0, 0.0, 0.0, 0.0, 0.0], actual)
     }
 
     #[test]
