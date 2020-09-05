@@ -46,20 +46,31 @@ pub type ResourceId = usize;
 /// The number of units of a resource required to perform a (piece of) a task.
 pub type ResourceQuantity = u64;
 
+/// Connects a resource to a quantity needed.
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ModeRequirement {
+    /// Id of the resource needed.
     #[serde(rename = "req/id")]
-    id: ModeId,
+    pub id: ResourceId,
+    /// Units of this resource needed for this mode.
     #[serde(rename = "req/quant")]
-    quantity: u64,
+    pub quantity: u64,
 }
 
-type Duration = u64;
+/// Duration in abstract unit of time
+type Duration = u32;
 
-/// A Mode represents a manner in which a task can be executed. It
-/// contains resource requirements as a list of `(quantity, id)`
-/// tuples, and a `duration`--how long these resources would be
-/// occupied for.
+/// A Mode represents a manner in which a task can be executed. It contains
+/// resource requirements as a list of `(quantity, id)` tuples, and a
+/// `duration`--how long these resources would be occupied for. If a multiple of
+/// each resource requirements are available in a period, the task can be
+/// executed in less time.
+///
+/// ## Example
+///
+/// A task can be completed in 30 minutes by 2 operators on machine. If 4
+/// operators and two machines are available, the task can be completed in 15
+/// minutes.
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Mode {
     #[serde(rename = "mode/duration")]
@@ -73,7 +84,7 @@ pub struct Mode {
 pub struct Task {
     /// Set of tasks which must be completed before this task
     #[serde(rename = "task/deps")]
-    pub deps: Vec<usize>,
+    pub deps: Vec<TaskId>,
     /// Set of modes in which this task can be completed
     #[serde(rename = "task/modes")]
     pub modes: Vec<Mode>,
@@ -96,17 +107,17 @@ impl Project {
     }
 }
 
-type TimeStamp = f64;
+type TimeStamp = u32;
 
 /// A Nucleotide associates a task with a specific execution mode and release time.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Nucleotide {
     pub task: usize,
     pub mode: usize,
-    pub release_time: f64,
+    pub release_time: u32,
 }
 
-/// A Genotype is a collection of [`Nucleotide`][nucleotide]s which fully describes
+/// A Genotype is a collection of [Nucleotide][nucleotide]s which fully describes
 /// the execution time and mode of each task in the [Project][project].
 ///
 /// [nucleotide]: struct.Nucleotide.html
@@ -130,7 +141,7 @@ pub struct Schedule {
 }
 
 impl Schedule {
-    pub fn makespan(&self) -> f64 {
+    pub fn makespan(&self) -> u32 {
         let makespan = self
             .genotype
             .0
@@ -145,9 +156,9 @@ impl Schedule {
                     .get(n.mode)
                     .unwrap()
                     .duration;
-                n.release_time + duration as f64
+                n.release_time + duration as u32
             })
-            .fold(0 as f64, |acc, nn| if acc < nn { nn } else { acc });
+            .fold(0 as u32, |acc, nn| if acc < nn { nn } else { acc });
 
         makespan
     }
@@ -166,6 +177,7 @@ mod tests {
     use test::Bencher;
 
     use super::*;
+    use fitness::fitness;
 
     static PRJ: &str = include_str!("sample.json");
 
@@ -190,7 +202,7 @@ mod tests {
             .map(|nucleotide| nucleotide.release_time)
             .collect();
         assert_eq!(
-            vec![0.0, 0.0, 804.0, 308.0, 804.0, 1147.0, 148.0, 1257.0, 1363.0, 1257.0],
+            vec![0, 205, 914, 1192, 1796, 1796, 2376, 3065, 3501, 3755],
             actual
         )
     }
@@ -199,7 +211,7 @@ mod tests {
     fn can_call_fitness() {
         let project: Project = serde_json::from_str(PRJ).unwrap();
         let schedule = Schedule::new_greedy(project);
-        let fitness = fitness::fitness(&schedule);
+        let fitness = fitness(&schedule);
         assert_eq!(fitness.len(), 1)
     }
 
