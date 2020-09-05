@@ -1,0 +1,13 @@
+;; shadow-cljs configuration
+{:deps true
+
+ :dev-http {10000 {:root    "resources/public"
+                   :handler daveduthie.bike-sched.handler/app}}
+ :builds
+ {:app {:target     :browser
+        :devtools   {:preloads [devtools.preload
+                                shadow.remote.runtime.cljs.browser]}
+        :output-dir "resources/public/js"
+        :asset-path "/js"
+        :modules    {:main {:entries [daveduthie.bike-sched.viz]}}
+        :dev        {:compiler-options {:output-feature-set :es6}}}}}

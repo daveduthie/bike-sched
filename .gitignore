@@ -1,3 +1,8 @@
 .cpcache
 target
 .nrepl-port
+/gen/node_modules/
+/gen/resources/public/js/
+/gen/.shadow-cljs/
+/gen/.lsp/sqlite.1.db
+/.lsp/sqlite.1.db

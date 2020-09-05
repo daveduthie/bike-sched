@@ -1,0 +1,11 @@
+{
+  "devDependencies": {
+    "shadow-cljs": "^2.11.1"
+  },
+  "dependencies": {
+    "@antv/g6": "^3.7.1",
+    "react": "16.13.1",
+    "react-dom": "^16.13.1",
+    "react-refresh": "0.8.1"
+  }
+}

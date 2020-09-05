@@ -1,11 +1,10 @@
-(ns daveduthie.bike-sched
+(ns daveduthie.bike-sched.gen
   (:require [clj-http.client :as clj-http]
             [clojure.java.io :as io]
             [jsonista.core :as json]
             [clojure.pprint :as pprint]
             [clojure.spec.alpha :as s]
             [clojure.test.check.generators :as gen]
-            [clojure.walk :as walk]
             [expound.alpha :as expound]
             [loom.graph :as graph]
             loom.io
@@ -87,7 +86,9 @@
                           (gen/tuple (gen/elements (range n-possible-resources))
                                      (gen/choose 1 10)))
                 {:min-elements 1})))
-   1))
+   1 ; min modes
+   3 ; max modes
+   ))
 
 (defn add-task*
   [project-seed*]
@@ -119,7 +120,9 @@
 (def project-gen* (iterate add-task* project-seed*))
 
 (defn sample-project
+  ;; doesn't specify seed, we we get a random schedule of `size`.
   ([size] (gen/generate (nth project-gen* size) size))
+  ;; specify seed, for reproducibility
   ([size seed] (gen/generate (nth project-gen* size) size seed)))
 
 (defn dump-project
@@ -149,40 +152,116 @@
       #_(update :body json/read-value)
       (select-keys [:body :status])))
 
-(comment
-  ;; Visualise dependencies between tasks
-  (loom.io/view
-   (reduce-kv
-    (fn [graph task-id {:task/keys [deps]}]
-      (->> deps
-           (map (fn [dep] [dep task-id])) ; dep->task-id
-           (apply graph/add-edges #_loom.label/add-labeled-edges graph)))
-    (graph/digraph)
-    (:project/tasks (sample-project 25 5))))
+(defn resource-contention
+  [project]
+  (let [resource-nodes (map-indexed (fn [idx resource]
+                                      {:nodes [{:id    (str "R " idx)
+                                                :label (:resource/name resource)
+                                                :type  "ellipse"}]})
+                                    (:project/resources project))
+        other-things
+        (apply
+         concat
+         (map-indexed
+          (fn [task-id {:task/keys [modes]}]
+            (let [Task (str "T " task-id)]
+              (apply concat
+                     [{:nodes [{:id    Task :type "triangle"
+                                :label (str "Task " task-id)}]}]
+                     (map-indexed
+                      (fn [mode-id {:mode/keys [requirements]}]
+                        (let [Mode (format "M %s::%s" task-id mode-id)]
+                          (into [{:nodes [{:id    Mode :type "diamond"
+                                           :label (str "Mode " mode-id)}],
+                                  :edges [{:source Task,
+                                           :target
+                                           (format "M %s::%s" task-id mode-id)}]}]
+                                (map (fn [{:req/keys [id quant]}]
+                                       {:nodes [],
+                                        :edges [{:source Mode,
+                                                 :target (str "R " id),
+                                                 :style  {:lineWidth quant}}]})
+                                     requirements))))
+                      modes))))
+          (-> project
+              :project/tasks)))]
+    {:edges (mapcat :edges other-things)
+     :nodes (concat
+             (mapcat :nodes resource-nodes)
+             (mapcat :nodes other-things))}))
 
-  (sample-project 1 2)
-  :.)
+(comment
+  (resource-contention (sample-project 1 0))
+
+  )
 
 (comment
-  ;; Visualise resource contention
-  (let [{:project/keys [tasks]} (sample-project 5 5)]
-    (loom.io/view
-     (reduce-kv
-      (fn [graph _task-id {:task/keys [modes]}]
-        (reduce-kv
-         (fn [graph mode-id {:mode/keys [requirements]}]
-           (->> requirements
-                (mapcat (fn [[_ resource-id]]
-                          [[mode-id resource-id] "M -> R"]))
-                (apply loom.label/add-labeled-edges graph)))
-         graph modes))
-      (graph/digraph)
-      tasks)
-     ;; :alg :sfdp
-     :alg :circo)))
+  (let [p  (sample-project 2 1)
+        ts (:project/tasks p)]
+    (future
+      (loom.io/view
+       ;; Visualise resource contention
+       (apply
+        loom.label/add-labeled-edges
+        (graph/digraph)
+        (apply
+         concat
+         (map-indexed
+          (fn [task-id {:task/keys [modes]}]
+            (prn :modes (count modes))
+            (apply concat
+                   (map-indexed
+                    (fn [mode-id {:mode/keys [requirements]}]
+                      (->> requirements
+                           (mapcat (fn [{:req/keys [id quant]}]
+                                     [[(format "M %s::%s" task-id mode-id)
+                                       (str "R " id)]
+                                      (format "x%s" quant)]))
+                           (into [[(str "T " task-id)
+                                   (format "M %s::%s" task-id mode-id)]
+                                  "Option"])))
+                    modes)))
+          ts)))
+       ;; :alg :sfdp
+       ;; :alg :circo
+       :alg :dot
+       ))
+    (future
+      (loom.io/view
+       ;; Visualise dependencies between tasks
+       (reduce-kv
+        (fn [graph task-id {:task/keys [deps]}]
+          (->> deps
+               (map (fn [dep] [dep task-id])) ; dep->task-id
+               (apply graph/add-edges #_loom.label/add-labeled-edges graph)))
+        (apply graph/digraph (range (count ts)))
+        ts)))))
 
 (comment
   (-> (clj-http/get "http://localhost:8000")
       :body)
   (let [data (sample-project 15 10)]
-    (-> (post-schedule! data))))
+    (map :release_time
+         (-> (post-schedule! data)
+             :body
+             (json/read-value json-object-mapper)
+             :genotype)))
+
+  (defmacro time
+    "Evaluates expr and prints the time it took.  Returns the value of
+  expr."
+    {:added "1.0"}
+    [expr]
+    `(let [start# (. System (nanoTime))
+           ret# ~expr]
+       {:elapsed (/ (double (- (. System (nanoTime)) start#)) 1000000.0),
+        #_#_:ret ret#}))
+
+)
+
+(defn handler
+  [req]
+  {:status 200,
+   :headers {"Content-Type" "application/json"},
+   :body (json/write-value-as-string
+          (sample-project 5 5) json-object-mapper)})
