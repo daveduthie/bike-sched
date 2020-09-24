@@ -1,17 +1,23 @@
 {:paths    ["resources" "src"]
- :deps     {aysylu/loom             {:mvn/version "1.0.2"}
-            binaryage/devtools      {:mvn/version "1.0.2"}
+ :deps     {;; Back end
             clj-http                {:mvn/version "3.10.2"}
-            cljs-bean               {:mvn/version "1.6.0"}
+            com.walmartlabs/lacinia {:mvn/version "0.38.0-alpha-2"}
             expound                 {:mvn/version "0.8.5"}
-            lilactown/helix         {:mvn/version "0.0.13"}
+            http-kit                {:mvn/version "2.4.0"}
+            integrant               {:mvn/version "0.8.0"}
+            integrant/repl          {:mvn/version "0.3.2"}
             metosin/jsonista        {:mvn/version "0.2.7"}
+            metosin/reitit          {:mvn/version "0.5.5"}
             org.clojure/clojure     {:mvn/version "1.10.1"}
-            org.clojure/core.async  {:mvn/version "1.3.610"}
             org.clojure/test.check  {:mvn/version "1.1.0"}
             wavejumper/clj-polyglot {:mvn/version "1.0.4"}
+            ;; Front end
+            aysylu/loom             {:mvn/version "1.0.2"}
+            binaryage/devtools      {:mvn/version "1.0.2"}
+            cljs-bean               {:mvn/version "1.6.0"}
+            lilactown/helix         {:mvn/version "0.0.13"}
+            org.clojure/core.async  {:mvn/version "1.3.610"}
             thheller/shadow-cljs    {:mvn/version "2.11.1"}
-            metosin/reitit          {:mvn/version "0.5.5"}
             }
  :jvm-opts ["-Dclojure.compiler.direct-linking=true"]
  :aliases
@@ -22,6 +28,12 @@
                          :sha     "6ec7f8eef509cd14d831e8cc16e856b31327a862"}}
            :main-opts  ["-m" "cognitect.test-runner"
                         "-d" "test"]}
+  :sass   {:extra-deps {deraen/sass4clj {:mvn/version "0.5.1"}
+                        }
+           :main-opts  ["-m" "sass4clj.main"
+                        "--source-paths" "styles/sass"
+                        "--target-path" "resources/public/css"
+                        "--auto"]}
   :pack   {:extra-deps {pack/pack.alpha {:git/url "https://github.com/juxt/pack.alpha.git"
                                          :sha     "0e8731e0f24db05b74769e219051b0e92b50624a"}}
            :main-opts  ["-m" "mach.pack.alpha.one-jar"

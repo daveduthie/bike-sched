@@ -1,0 +1,6 @@
+{"keep-require-at-start?" true,
+ "macro-defs"
+ {helix.core/defnc [{:attr-map? true, :doc? true, :element :declaration}
+                    {:pred :string}
+                    {:pred :map}
+                                     :function-params-and-bodies]}}

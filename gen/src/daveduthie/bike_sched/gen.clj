@@ -12,8 +12,8 @@
 
 (def json-object-mapper (json/object-mapper {:decode-key-fn true :pretty true}))
 
-(set! *print-namespace-maps* false)
-(set! s/*explain-out* expound/printer)
+(alter-var-root #'*print-namespace-maps* (constantly false))
+(alter-var-root #'s/*explain-out* (constantly expound/printer))
 
 (s/def :mode/duration pos-int?)
 
@@ -154,41 +154,49 @@
 
 (defn resource-contention
   [project]
-  (let [resource-nodes (map-indexed (fn [idx resource]
-                                      {:nodes [{:id    (str "R " idx)
-                                                :label (:resource/name resource)
-                                                :type  "ellipse"}]})
-                                    (:project/resources project))
+  (let [resource-nodes (map-indexed
+                        (fn [idx resource]
+                          {:nodes [{:id (str "R " idx),
+                                    :label (:resource/name resource),
+                                    :data {:type "earth"}}]})
+                        (:project/resources project))
         other-things
         (apply
          concat
          (map-indexed
           (fn [task-id {:task/keys [modes]}]
             (let [Task (str "T " task-id)]
-              (apply concat
-                     [{:nodes [{:id    Task :type "triangle"
-                                :label (str "Task " task-id)}]}]
-                     (map-indexed
-                      (fn [mode-id {:mode/keys [requirements]}]
-                        (let [Mode (format "M %s::%s" task-id mode-id)]
-                          (into [{:nodes [{:id    Mode :type "diamond"
-                                           :label (str "Mode " mode-id)}],
-                                  :edges [{:source Task,
-                                           :target
-                                           (format "M %s::%s" task-id mode-id)}]}]
-                                (map (fn [{:req/keys [id quant]}]
-                                       {:nodes [],
-                                        :edges [{:source Mode,
-                                                 :target (str "R " id),
-                                                 :style  {:lineWidth quant}}]})
-                                     requirements))))
-                      modes))))
+              (apply
+               concat
+               [{:nodes [{:id Task,
+                          :label (str "Task " task-id),
+                          :data {:type "check-square"}}]}]
+               (map-indexed
+                (fn [mode-id {:mode/keys [requirements]}]
+                  (let [Mode (format "M %s::%s" task-id mode-id)]
+                    (into
+                     [{:nodes [{:id Mode,
+                                ;; :type "diamond",
+                                :label (str "Mode " mode-id),
+                                :data {:type "company"}}],
+                       :edges [{:source Task,
+                                :target (format "M %s::%s" task-id mode-id)
+                                :data {:source Task,
+                                       :target (format "M %s::%s" task-id mode-id)}}]}]
+                     (map (fn [{:req/keys [id quant]}]
+                            {:nodes [],
+                             :edges [{:source Mode,
+                                      :target (str "R " id),
+                                      :data {:source Mode,
+                                             :target (str "R " id)}
+                                      :style {:lineWidth quant}}]})
+                          requirements))))
+                modes))))
           (-> project
               :project/tasks)))]
-    {:edges (mapcat :edges other-things)
-     :nodes (concat
-             (mapcat :nodes resource-nodes)
-             (mapcat :nodes other-things))}))
+    {:edges (mapcat :edges other-things),
+     :nodes (concat (mapcat :nodes resource-nodes)
+                    (mapcat :nodes other-things))}))
 
 (comment
   (resource-contention (sample-project 1 0))
@@ -240,12 +248,40 @@
 (comment
   (-> (clj-http/get "http://localhost:8000")
       :body)
+
   (let [data (sample-project 15 10)]
     (map :release_time
          (-> (post-schedule! data)
              :body
              (json/read-value json-object-mapper)
              :genotype)))
+
+  (sample-project 2 2)
+
+  #:project{:resources [#:resource{:cost 1, :name "aP", :quantity 1}
+                        #:resource{:cost 1, :name "2x", :quantity 2}
+                        #:resource{:cost 2, :name "D", :quantity 3}
+                        #:resource{:cost 0, :name "c", :quantity 1}
+                        #:resource{:cost 1, :name "3", :quantity 2}
+                        #:resource{:cost 0, :name "B", :quantity 1}],
+            :tasks
+          [#:task{:deps [],
+            :modes [#:mode{:duration 162,
+                           :requirements [#:req{:id 0, :quant 2}
+                                          #:req{:id 2, :quant 8}]}
+                          #:mode{:duration 686,
+                           :requirements [#:req{:id 1, :quant 10}
+                                          #:req{:id 2, :quant 5}
+                                          #:req{:id 4, :quant 1}]}
+                          #:mode{:duration 464,
+                           :requirements [#:req{:id 1, :quant 2}
+                                          #:req{:id 4, :quant 4}]}]}
+           #:task{:deps #{0},
+            :modes [#:mode{:duration 643,
+                           :requirements [#:req{:id 2, :quant 3}]}
+                          #:mode{:duration 161,
+                           :requirements [#:req{:id 0, :quant 3}
+                                          #:req{:id 1, :quant 7}]}]}]}
 
   (defmacro time
     "Evaluates expr and prints the time it took.  Returns the value of
@@ -258,10 +294,3 @@
         #_#_:ret ret#}))
 
 )
-
-(defn handler
-  [req]
-  {:status 200,
-   :headers {"Content-Type" "application/json"},
-   :body (json/write-value-as-string
-          (sample-project 5 5) json-object-mapper)})

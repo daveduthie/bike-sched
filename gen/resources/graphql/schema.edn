@@ -1,0 +1,23 @@
+{:objects
+ {:Mode            {:fields {:duration     {:type Int},
+                             ;; TODO(daveduthie): try [] for lists?
+                             :requirements {:type (list :ModeRequirement)}}},
+  :ModeRequirement {:fields {:quant    {:type Int},
+                             :resource {:type :Resource}}},
+  :Project         {,
+                    :fields {:resources {:type (list :Resource)},
+                             :tasks     {:type (list :Task)}}},
+  :Resource        {:fields {:cost     {:type Int},
+                             :name     {:type String},
+                             :quantity {:type Int}}},
+  :Task            {:fields {:id    {:type Int}
+                             :deps  {:type (list :Task)},
+                             :modes {:type (list :Mode)}}}},
+ :queries {:Project {:type :Project
+                     :args {:seed {:default-value 2,
+                                   :description   "Seed for generator",
+                                   :type          Int},
+                            :size {:default-value 2,
+                                   :description   "Number of tasks",
+                                   :type          Int}}
+                     }}}

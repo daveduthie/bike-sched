@@ -1,8 +1,6 @@
 ;; shadow-cljs configuration
 {:deps true
 
- :dev-http {10000 {:root    "resources/public"
-                   :handler daveduthie.bike-sched.handler/app}}
  :builds
  {:app {:target     :browser
         :devtools   {:preloads [devtools.preload

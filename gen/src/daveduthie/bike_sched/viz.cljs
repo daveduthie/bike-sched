@@ -1,5 +1,6 @@
 (ns daveduthie.bike-sched.viz
   (:require ["@antv/g6" :as G6]
+            ["@antv/graphin" :as Graphin :default Graphin]
             ["react-dom" :as rdom]
             [cljs-bean.core :as b]
             [clojure.core.async :as a]
@@ -41,19 +42,9 @@
 (defnc graph
   "Container for G6"
   []
-  (let [ref              (r/useRef nil)
-        [size setSize]   (hooks/use-state 2)
-        [seed setSeed]   (hooks/use-state 2)
-        [graph setGraph] (hooks/use-state nil)
-        [data setData]   (hooks/use-state #js {})]
-    (hooks/use-effect
-     :auto-deps
-     (when-not graph
-       ;; init
-       (setGraph (G6/Graph. (graph-config (rdom/findDOMNode (.-current ref))))))
-     ;; destroy
-     #(.destroy graph)
-     (when graph (.data graph data) (.render graph)))
+  (let [[size setSize] (hooks/use-state 2)
+        [seed setSeed] (hooks/use-state 2)
+        [data setData] (hooks/use-state #js {})]
     (d/div
      ($ setParam {:label "Size" :value size :setter setSize})
      ($ setParam {:label "Seed" :value seed :setter setSeed})
@@ -61,24 +52,40 @@
       {:style {:margin "10px"}
        :on-click
        (fn []
-         (a/go (let [res  (<p! (js/fetch (gstr/format "/project/%d/%d/resource-contention"
-                                                      size seed)))
-                     data (when (.-ok res) (<p! (.json res)))]
-                 (when data (prn :data! (keys (b/bean data))) (setData data)))))}
-      "refresh")
-     (d/div {:ref ref, :style {:border "2px solid orange"}}))))
+         (a/go
+           (let [res  (<p! (js/fetch
+                            (gstr/format "/project/%d/%d"
+                                         size seed)))
+                 data (when (.-ok res) (<p! (.json res)))]
+             (when data (prn :data! (keys (b/bean data))) (setData data)))))}
+      "Project")
+     (d/button
+      {:style {:margin "10px"}
+       :on-click
+       (fn []
+         (a/go
+           (let [res  (<p! (js/fetch
+                            (gstr/format "/project/%d/%d/resource-contention"
+                                         size seed)))
+                 data (when (.-ok res) (<p! (.json res)))]
+             (when data (prn :data! (keys (b/bean data))) (setData data)))))}
+      "Resource contention")
+     (d/div {:style {:width  "100%"
+                     :height "80vh"}}
+            ($ Graphin {:data   data
+                        :style  {:height "50vh"}
+                        :layout #js {:name "dagre"}})))))
+
+(comment
+  (b/->clj (-> Graphin/Utils (.mock 5) .tree .graphin)))
 
 (defnc app []
   (d/div
    (d/h1 "Welcome!")
-   ;; create elements out of components
-   ($ graph)
-   ))
+   ($ graph)))
 
-;; start your app with your favorite React renderer
 (defn ^:export ^:dev/after-load init []
-  (rdom/render ($ app)
-               (js/document.getElementById "app")))
+  (rdom/render ($ app) (js/document.getElementById "app")))
 
 (comment
 
@@ -93,5 +100,7 @@
   (b/bean #js {:a 1})
 
   (+ 1 2)
+
+  (tap> ::foo)
 
   )
