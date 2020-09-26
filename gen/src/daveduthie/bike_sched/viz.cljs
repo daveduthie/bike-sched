@@ -42,12 +42,20 @@
 (defnc graph
   "Container for G6"
   []
-  (let [[size setSize] (hooks/use-state 2)
-        [seed setSeed] (hooks/use-state 2)
-        [data setData] (hooks/use-state #js {})]
+  (let [[size setSize]     (hooks/use-state 2)
+        [seed setSeed]     (hooks/use-state 2)
+        [layout setLayout] (hooks/use-state "dagre")
+        [data setData]     (hooks/use-state #js {})
+        layout-options     [{:value "dagre" :label "Dagre"}
+                            {:value "circle" :label "Circle"}
+                            {:value "grid" :label "Grid"}]]
     (d/div
      ($ setParam {:label "Size" :value size :setter setSize})
      ($ setParam {:label "Seed" :value seed :setter setSeed})
+     (d/label "Layout")
+     (d/select {:on-change (fn [e] (setLayout (-> e .-target .-value)))}
+               (for [o layout-options]
+                 (d/option {:key o :& o})))
      (d/button
       {:style {:margin "10px"}
        :on-click
@@ -71,10 +79,11 @@
              (when data (prn :data! (keys (b/bean data))) (setData data)))))}
       "Resource contention")
      (d/div {:style {:width  "100%"
-                     :height "80vh"}}
+                     :height "80vh"
+                     :border "1px solid gray"}}
             ($ Graphin {:data   data
-                        :style  {:height "50vh"}
-                        :layout #js {:name "dagre"}})))))
+                        :style  {:height "80vh"}
+                        :layout #js {:name layout}})))))
 
 (comment
   (b/->clj (-> Graphin/Utils (.mock 5) .tree .graphin)))

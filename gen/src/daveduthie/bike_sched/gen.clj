@@ -56,7 +56,7 @@
 (defn- deps*
   [n-possible-deps]
   (if (> n-possible-deps 0)
-    (gen/set (gen/elements (range n-possible-deps)) {:min-elements 0 :max-count 3})
+    (gen/set (gen/elements (range n-possible-deps)) {:min-elements 0 :max-count 2})
     (gen/return [])))
 
 (defn- resources*
@@ -156,40 +156,54 @@
   [project]
   (let [resource-nodes (map-indexed
                         (fn [idx resource]
-                          {:nodes [{:id (str "R " idx),
+                          {:nodes [{:id    (str "R " idx),
                                     :label (:resource/name resource),
-                                    :data {:type "earth"}}]})
+                                    :style {:primaryColor "green"}
+                                    :data  {:type "earth"}}]})
                         (:project/resources project))
         other-things
         (apply
          concat
          (map-indexed
-          (fn [task-id {:task/keys [modes]}]
+          (fn [task-id {:task/keys [modes deps]}]
             (let [Task (str "T " task-id)]
               (apply
                concat
-               [{:nodes [{:id Task,
+               [{:nodes [{:id    Task,
                           :label (str "Task " task-id),
-                          :data {:type "check-square"}}]}]
+                          :style {:primaryColor "blue"}
+                          :data  {:type "check-square"}}]
+                 :edges (mapv (fn [tid]
+                                (let [Dep (str "T " tid)]
+                                  {:source Task
+                                   :target Dep
+                                   :style  {:line {:color "blue"}}
+                                   :data   {:source Task
+                                            :target Dep}}))
+                              deps)}]
                (map-indexed
                 (fn [mode-id {:mode/keys [requirements]}]
                   (let [Mode (format "M %s::%s" task-id mode-id)]
                     (into
-                     [{:nodes [{:id Mode,
-                                ;; :type "diamond",
+                     [{:nodes [{:id    Mode,
                                 :label (str "Mode " mode-id),
-                                :data {:type "company"}}],
+                                :style {:primaryColor "red"}
+                                :data  {:type "company"}}],
                        :edges [{:source Task,
                                 :target (format "M %s::%s" task-id mode-id)
-                                :data {:source Task,
-                                       :target (format "M %s::%s" task-id mode-id)}}]}]
+                                :style {:line {:color "red"}}
+                                :data   {:source Task,
+                                         :target (format "M %s::%s" task-id mode-id)}}]}]
                      (map (fn [{:req/keys [id quant]}]
                             {:nodes [],
                              :edges [{:source Mode,
                                       :target (str "R " id),
-                                      :data {:source Mode,
-                                             :target (str "R " id)}
-                                      :style {:lineWidth quant}}]})
+                                      :data   {:source Mode,
+                                               :target (str "R " id)}
+                                      :style  {:line {:width (Math/log quant)
+                                                      :color "green"
+                                                      :dash [2 5]}
+                                               }}]})
                           requirements))))
                 modes))))
           (-> project
@@ -200,6 +214,8 @@
 
 (comment
   (resource-contention (sample-project 1 0))
+
+  (Math/log 10)
 
   )
 
@@ -255,33 +271,6 @@
              :body
              (json/read-value json-object-mapper)
              :genotype)))
-
-  (sample-project 2 2)
-
-  #:project{:resources [#:resource{:cost 1, :name "aP", :quantity 1}
-                        #:resource{:cost 1, :name "2x", :quantity 2}
-                        #:resource{:cost 2, :name "D", :quantity 3}
-                        #:resource{:cost 0, :name "c", :quantity 1}
-                        #:resource{:cost 1, :name "3", :quantity 2}
-                        #:resource{:cost 0, :name "B", :quantity 1}],
-            :tasks
-          [#:task{:deps [],
-            :modes [#:mode{:duration 162,
-                           :requirements [#:req{:id 0, :quant 2}
-                                          #:req{:id 2, :quant 8}]}
-                          #:mode{:duration 686,
-                           :requirements [#:req{:id 1, :quant 10}
-                                          #:req{:id 2, :quant 5}
-                                          #:req{:id 4, :quant 1}]}
-                          #:mode{:duration 464,
-                           :requirements [#:req{:id 1, :quant 2}
-                                          #:req{:id 4, :quant 4}]}]}
-           #:task{:deps #{0},
-            :modes [#:mode{:duration 643,
-                           :requirements [#:req{:id 2, :quant 3}]}
-                          #:mode{:duration 161,
-                           :requirements [#:req{:id 0, :quant 3}
-                                          #:req{:id 1, :quant 7}]}]}]}
 
   (defmacro time
     "Evaluates expr and prints the time it took.  Returns the value of
