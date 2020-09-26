@@ -57,20 +57,49 @@
     (ig/init-key k new-shadow-conf)))
 
 ;; -----------------------------------------------------------------------------
+;; Shadow CLJS compiler
+
+(defn- release-options-for-build
+  [build-conf]
+  (-> build-conf
+      :compiler-options
+      (select-keys [:pseudo-names :pretty-print :debug :source-maps])))
+
+(defn- release-build
+  [build-conf opts]
+  (shadow.api/release*
+   build-conf
+   (-> build-conf release-options-for-build (merge opts))))
+
+(defmethod ig/init-key ::shadow-cljs-compiler
+  [_ {:keys [logger] :as conf}]
+  (let [conf (shadow.config/normalize conf)]
+    (shadow.api/with-runtime
+      (doseq [build-conf (-> conf :builds vals)]
+        (release-build build-conf {:logger logger}))
+      :done)))
+
+;; -----------------------------------------------------------------------------
 ;; System
 
+(def cljs-config
+  {:nrepl {:port 1111}
+   :builds
+   {:app
+    {:target     :browser
+     :devtools   {:preloads ['devtools.preload
+                             'shadow.remote.runtime.cljs.browser]}
+     :output-dir "resources/public/js"
+     :asset-path "/js"
+     :modules    {:main {:entries ['daveduthie.bike-sched.viz]}}
+     :dev        {:compiler-options {:output-feature-set :es6}}}}})
+
 (def system
-  {::http-server        {:port 8080, :handler (ig/ref ::handler)}
-   ::handler            {}
-   ::shadow-cljs-server {:builds
-                         {:app
-                          {:target     :browser
-                           :devtools   {:preloads ['devtools.preload
-                                                   'shadow.remote.runtime.cljs.browser]}
-                           :output-dir "resources/public/js"
-                           :asset-path "/js"
-                           :modules    {:main {:entries ['daveduthie.bike-sched.viz]}}
-                           :dev        {:compiler-options {:output-feature-set :es6}}}}}})
+  {::http-server          {:port 8080, :handler (ig/ref ::handler)}
+   ::handler              {}
+   ::shadow-cljs-server   cljs-config
+   ;; ::shadow-cljs-compiler cljs-config
+   })
 
 (defn -main [& args]
   (ig/init system))
@@ -79,5 +108,9 @@
   (require '[integrant.repl.state :as irs])
 
   (-> (:duct.server/shadow-cljs irs/system))
+
+  (require '[shadow.cljs.devtools.api :as shadow.api])
+
+  (shadow.api/repl :app)
 
   )
