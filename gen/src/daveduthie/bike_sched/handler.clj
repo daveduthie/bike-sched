@@ -54,8 +54,6 @@
    (ring/routes (ring/create-resource-handler {:path "/", :root "public"})
                 (ring/create-default-handler))))
 
-(defmethod ig/init-key ::handler [_ _] handler)
-
 (comment
   (require '[integrant.repl.state :as irs])
 

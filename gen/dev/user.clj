@@ -1,9 +1,8 @@
 (ns user
-  (:require [integrant.repl :refer [clear go halt prep init reset reset-all]]))
+  (:require [integrant.repl :refer [clear go halt prep init reset reset-all]]
+            [daveduthie.bike-sched.system :as system]))
 
-(comment
-  (integrant.repl/set-prep!
-   (constantly @(requiring-resolve 'daveduthie.bike-sched.system/system))))
+(integrant.repl/set-prep! (fn [] system/system))
 
 (comment
   (go)

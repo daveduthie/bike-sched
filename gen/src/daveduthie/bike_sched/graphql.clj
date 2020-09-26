@@ -17,14 +17,9 @@
 
 (defn- resolve-task-deps
   [{:keys [project]} _ task]
-  (prn ::Task task)
-  (prn ::Project-ts (:project/tasks project))
-  (let [ret
-        (add-ids
-         (map (fn [id] (-> project :project/tasks (get id)))
-              (:task/deps task)))]
-    (prn :ret (map :id ret) ret)
-    ret))
+  (add-ids
+   (map (fn [id] (-> project :project/tasks (get id)))
+        (:task/deps task))))
 
 (defn- resolve-mode-requirement-resource
   [{:keys [project]} _ mode-requirement]
