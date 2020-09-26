@@ -15,21 +15,6 @@
 
 (enable-console-print!)
 
-(defn- graph-config
-  [container]
-  #js {:container container,
-       :fitView   true,
-       :width     js/document.documentElement.clientWidth,
-       :height    2000,
-       :layout    #js {:type          "dagre",
-                       :rankdir       "LR",
-                       :align         "DL",
-                       :nodesep       20,
-                       :ranksep       50,
-                       :controlPoints true},
-       :defaultEdge #js {:style #js {:lineWidth 1}}
-       :modes     #js {:default #js ["drag-canvas" "drag-combo" "drag-node"]}})
-
 (defnc setParam
   [{:keys [label value setter]}]
   (d/div
