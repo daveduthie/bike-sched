@@ -200,10 +200,9 @@
                                       :target (str "R " id),
                                       :data   {:source Mode,
                                                :target (str "R " id)}
-                                      :style  {:line {:width (Math/log quant)
+                                      :style  {:line {:width (max 1 (Math/log quant))
                                                       :color "green"
-                                                      :dash [2 5]}
-                                               }}]})
+                                                      :dash [1 7]}}}]})
                           requirements))))
                 modes))))
           (-> project
