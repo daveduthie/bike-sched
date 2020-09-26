@@ -7,3 +7,4 @@ target
 /gen/.lsp/sqlite.1.db
 /.lsp/sqlite.1.db
 /gen/resources/public/css/
+/.idea/
