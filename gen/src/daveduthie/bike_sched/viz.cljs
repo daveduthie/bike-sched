@@ -46,9 +46,16 @@
         [seed setSeed]     (hooks/use-state 2)
         [layout setLayout] (hooks/use-state "dagre")
         [data setData]     (hooks/use-state #js {})
-        layout-options     [{:value "dagre" :label "Dagre"}
+        layout-options     [
                             {:value "circle" :label "Circle"}
-                            {:value "grid" :label "Grid"}]]
+                            {:value "concentric", :label "Concentric"}
+                            {:value "dagre" :label "Dagre"}
+                            {:value "force" :label "Force"}
+                            {:value "grid" :label "Grid"}
+                            {:value "radial" :label "Radial"}
+                            {:value "random", :label "Random"}
+                            {:value "tweak", :label "Tweak"}
+                            ]]
     (d/div
      ($ setParam {:label "Size" :value size :setter setSize})
      ($ setParam {:label "Seed" :value seed :setter setSeed})
@@ -98,18 +105,7 @@
 
 (comment
 
-  (doto (G6/Graph.
-         (clj->js {:container "graph",
-                   :width 1200,
-                   :height 800}))
-    (.data graph-data)
-    (.render))
-
-
-  (b/bean #js {:a 1})
-
-  (+ 1 2)
-
   (tap> ::foo)
+  (tap> (b/bean (js/document.getElementById "app")))
 
   )
