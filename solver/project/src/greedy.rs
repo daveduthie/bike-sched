@@ -55,9 +55,12 @@ fn select_random_modes<R: Rng>(tasks: &[Task], rng: &mut R) -> Vec<ModeId> {
 ///
 /// - Resource has availability 3
 /// - Task0 requires 2 units for 2 ticks.
-/// - Task1 requires 1 unit for 3 ticks.
+/// - Task1 requires 1 unit for 4 ticks.
+/// - Task2 requires 2 units for 1 tick.
+/// - Task2 requires 2 units for 1 tick.
 /// - Task0 is released for execution first.
-/// - Task0 is independent of Task1.
+/// - Task1 is released for execution second.
+/// - All tasks are independent of each other.
 ///
 /// ### Tick 1
 ///
@@ -67,11 +70,7 @@ fn select_random_modes<R: Rng>(tasks: &[Task], rng: &mut R) -> Vec<ModeId> {
 /// ### Tick 2
 ///
 /// - Execute both units of `Task0`
-/// - Execute the unit of `Task1`
-///
-/// ### Tick 3
-///
-/// - Execute the unit of `Task1`
+/// - Execute two units of `Task1`
 ///
 /// ## Algorithm
 ///

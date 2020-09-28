@@ -92,7 +92,8 @@
      :output-dir "resources/public/js"
      :asset-path "/js"
      :modules    {:main {:entries ['daveduthie.bike-sched.viz]}}
-     :dev        {:compiler-options {:output-feature-set :es6}}}}})
+     :dev        {:compiler-options {:output-feature-set :es2018}}
+     }}})
 
 (def system
   {::http-server          {:port 8080, :handler (ig/ref ::handler)}
